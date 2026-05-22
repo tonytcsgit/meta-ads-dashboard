@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280">
+  <title>Meta Ads Live Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      --primary: oklch(35% .18 250);
+      --primary-foreground: oklch(99% 0 0);
+      --background: oklch(99% 0 0);
+      --foreground: oklch(15% .01 240);
+      --card: oklch(99% 0 0);
+      --card-foreground: oklch(15% .01 240);
+      --popover: oklch(99% 0 0);
+      --popover-foreground: oklch(15% .01 240);
+      --secondary: oklch(96% .005 240);
+      --secondary-foreground: oklch(25% .01 240);
+      --muted: oklch(96% .005 240);
+      --muted-foreground: oklch(50% .01 240);
+      --accent: oklch(93% .01 240);
+      --accent-foreground: oklch(15% .01 240);
+      --destructive: oklch(55% .22 25);
+      --destructive-foreground: oklch(99% 0 0);
+      --border: oklch(88% .005 240);
+      --input: oklch(92% .005 240);
+      --ring: oklch(45% .18 250);
+      --radius: .5rem;
+    }
+    .dark {
+      --primary: oklch(55% .18 250);
+      --primary-foreground: oklch(99% 0 0);
+      --background: oklch(14.1% .005 285.823);
+      --foreground: oklch(85% .005 65);
+      --card: oklch(21% .006 285.885);
+      --card-foreground: oklch(85% .005 65);
+      --popover: oklch(21% .006 285.885);
+      --popover-foreground: oklch(85% .005 65);
+      --secondary: oklch(24% .006 286.033);
+      --secondary-foreground: oklch(70% .005 65);
+      --muted: oklch(27.4% .006 286.033);
+      --muted-foreground: oklch(70.5% .015 286.067);
+      --accent: oklch(27.4% .006 286.033);
+      --accent-foreground: oklch(92% .005 65);
+      --destructive: oklch(70.4% .191 22.216);
+      --destructive-foreground: oklch(98.5% 0 0);
+      --border: oklch(100% 0 0/.1);
+      --input: oklch(100% 0 0/.15);
+      --ring: oklch(48.8% .243 264.376);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; background: var(--background); color: var(--foreground); }
+    .bg-background { background: var(--background); }
+    .bg-foreground { background: var(--foreground); }
+    .text-foreground { color: var(--foreground); }
+    .bg-card { background: var(--card); }
+    .text-card-foreground { color: var(--card-foreground); }
+    .bg-secondary { background: var(--secondary); }
+    .text-secondary-foreground { color: var(--secondary-foreground); }
+    .bg-muted { background: var(--muted); }
+    .text-muted-foreground { color: var(--muted-foreground); }
+    .bg-accent { background: var(--accent); }
+    .text-accent-foreground { color: var(--accent-foreground); }
+    .bg-primary { background: var(--primary); }
+    .text-primary-foreground { color: var(--primary-foreground); }
+    .border-border { border-color: var(--border); }
+    .bg-input { background: var(--input); }
+    .bg-card\/80 { background: color-mix(in oklch, var(--card) 80%, transparent); }
+    .bg-card\/60 { background: color-mix(in oklch, var(--card) 60%, transparent); }
+    .bg-secondary\/60 { background: color-mix(in oklch, var(--secondary) 60%, transparent); }
+    .bg-secondary\/10 { background: color-mix(in oklch, var(--secondary) 10%, transparent); }
+    .border-border\/60 { border-color: color-mix(in oklch, var(--border) 60%, transparent); }
+    .border-border\/30 { border-color: color-mix(in oklch, var(--border) 30%, transparent); }
+    .bg-border { background: var(--border); }
+    @keyframes pulse { 50% { opacity: .5; } }
+    .animate-pulse { animation: pulse 2s cubic-bezier(.4,0,.6,1) infinite; }
+    .tabular-nums { font-variant-numeric: tabular-nums; }
+    /* File input for CSV */
+    .csv-input { display: none; }
+  </style>
+</head>
+<body>
+<div id="root">
+  <div class="min-h-screen bg-background">
+    <!-- Accounts Bar -->
+    <div id="accounts-bar" class="border-b border-border bg-card/80 backdrop-blur-sm px-4 py-1.5 flex flex-wrap items-center gap-1.5">
+      <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mr-1">Accounts</span>
+      <!-- Populated by JS -->
+    </div>
+
+    <!-- Sticky Nav Header -->
+    <header class="sticky top-0 z-10 border-b border-border bg-card/60 backdrop-blur-sm">
+      <div class="flex items-center justify-between px-4 h-[53px]">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-md bg-primary flex items-center justify-center shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-activity w-3.5 h-3.5 text-white"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"></path></svg>
+          </div>
+          <span class="font-bold text-foreground text-sm">Meta Ads Monitor</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="timestamp" class="text-xs text-muted-foreground hidden sm:block">Updated —</span>
+          <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock w-3 h-3"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span>—</span>
+          </div>
+          <a href="#youtube-section" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-red-600/15 hover:bg-red-600/25 text-red-400 text-xs font-medium transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-youtube w-3 h-3"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"></path><path d="m10 15 5-3-5-3z"></path></svg>
+            <span class="hidden sm:inline">YouTube</span>
+          </a>
+          <a href="#" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-secondary hover:bg-accent text-secondary-foreground text-xs font-medium transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text w-3 h-3"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>
+            <span class="hidden sm:inline">Daily Report</span>
+          </a>
+          <!-- CSV Import -->
+          <label class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-secondary hover:bg-accent text-secondary-foreground text-xs font-medium transition-colors cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
+            <span class="hidden sm:inline">Import CSV</span>
+            <input type="file" accept=".csv,.json" class="csv-input" onchange="handleFileImport(event)">
+          </label>
+          <button onclick="loadSampleData()" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-secondary hover:bg-accent text-secondary-foreground text-xs font-medium transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 16h5v5"></path></svg>
+            <span class="hidden sm:inline">Load Sample Data</span>
+          </button>
+          <!-- Dark Mode Toggle -->
+          <button id="dark-toggle" onclick="toggleDarkMode()" title="Toggle dark mode" class="flex items-center justify-center w-7 h-7 rounded-md bg-secondary hover:bg-accent text-secondary-foreground transition-colors">
+            <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun w-3.5 h-3.5 hidden"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
+            <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon w-3.5 h-3.5"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="px-4 py-3 space-y-3">
+      <!-- Revenue Card -->
+      <div id="revenue-card" class="rounded-lg border border-border bg-card px-4 py-3 space-y-2">
+        <div class="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up w-3.5 h-3.5"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+          May Revenue
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <span id="rev-amount" class="text-xl font-bold font-mono text-foreground">$0.00</span>
+          <span id="rev-goal" class="text-xs text-muted-foreground">of $800,000.00 goal</span>
+          <div class="h-4 w-px bg-border"></div>
+          <span class="text-xs text-muted-foreground"><span id="rev-leads" class="font-semibold text-foreground">0</span> payable leads &nbsp;·&nbsp; Day 22/31</span>
+          <span id="rev-projected" class="ml-auto text-xs font-medium px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-600 border-amber-500/20">↗ Projected $0.00</span>
+        </div>
+        <div class="w-full h-2.5 rounded-full bg-secondary overflow-hidden">
+          <div id="rev-bar" class="h-full rounded-full transition-all bg-blue-500" style="width: 0%;"></div>
+        </div>
+        <div class="flex justify-between text-[10px] text-muted-foreground">
+          <span id="rev-pct">0% of goal</span>
+          <span id="rev-remaining">$800,000.00 remaining</span>
+        </div>
+        <div id="rev-breakdown" class="flex flex-wrap gap-x-3 gap-y-0.5 pt-1"></div>
+      </div>
+
+      <!-- Spend by Account bars -->
+      <div id="spend-bars" class="flex flex-wrap gap-3"></div>
+
+      <!-- Filter Bar -->
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <button type="button" class="flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-secondary hover:bg-accent text-xs font-medium text-foreground transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar w-3.5 h-3.5 text-muted-foreground"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>
+          May 22, 2026
+        </button>
+        <div class="relative w-40 sm:w-60">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+          <input id="search-input" class="w-full min-w-0 rounded-md border px-3 py-1 shadow-xs transition-[color,box-shadow] outline-none pl-9 h-8 text-sm bg-secondary border-border text-foreground placeholder:text-muted-foreground" placeholder="Search..." oninput="filterTable()">
+        </div>
+        <div class="flex items-center rounded-md border border-border overflow-hidden">
+          <button onclick="setGroupMode('offers')" id="btn-offers" class="px-3 py-1.5 text-xs font-medium transition-colors bg-primary text-primary-foreground">Offers</button>
+          <button onclick="setGroupMode('accounts')" id="btn-accounts" class="px-3 py-1.5 text-xs font-medium transition-colors bg-secondary text-muted-foreground hover:text-foreground">Accounts</button>
+        </div>
+        <div class="flex items-center rounded-md border border-border overflow-hidden">
+          <button onclick="setWindow('combined')" id="btn-combined" class="px-3 py-1.5 text-xs font-medium transition-colors border-l first:border-l-0 border-border bg-primary text-primary-foreground">Combined</button>
+          <button onclick="setWindow('yesterday')" id="btn-yesterday" class="px-3 py-1.5 text-xs font-medium transition-colors border-l border-border bg-secondary text-muted-foreground hover:text-foreground">Yesterday</button>
+          <button onclick="setWindow('last_3d')" id="btn-last_3d" class="px-3 py-1.5 text-xs font-medium transition-colors border-l border-border bg-secondary text-muted-foreground hover:text-foreground">3-Day</button>
+          <button onclick="setWindow('last_7d')" id="btn-last_7d" class="px-3 py-1.5 text-xs font-medium transition-colors border-l border-border bg-secondary text-muted-foreground hover:text-foreground">7-Day</button>
+        </div>
+        <div class="flex items-center gap-1.5 ml-auto">
+          <span class="text-xs text-muted-foreground">Total spend:</span>
+          <span id="total-spend" class="text-sm font-bold text-foreground font-mono">$0.00</span>
+        </div>
+      </div>
+
+      <!-- Main Table -->
+      <div class="overflow-x-auto rounded-lg border border-border">
+        <table class="w-full text-sm">
+          <thead class="z-[35] bg-background">
+            <tr class="border-b border-border bg-secondary/60">
+              <th class="px-1 sm:px-4 py-2 w-6 sm:w-8 sm:left-0 z-[35] bg-secondary/60"></th>
+              <th class="px-1 sm:px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-left sm:left-8 z-[35] bg-secondary/60 sm:w-[320px] sm:min-w-[320px] text-muted-foreground"><span class="inline-flex items-center gap-1">Offer / Campaign</span></th>
+              <th class="table-cell px-2 sm:px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap text-left sm:left-[352px] z-[35] bg-secondary/60 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.08)] sm:w-[120px]">Account</th>
+              <th class="px-1 sm:px-4 py-2 text-[10px] sm:text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-left z-[35] bg-secondary/60 text-muted-foreground"><span class="inline-flex items-center gap-1">Status</span></th>
+              <th class="table-cell px-2 sm:px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-right z-[35] bg-secondary/60 text-muted-foreground"><span class="inline-flex items-center justify-end gap-1">Budget</span></th>
+              <th class="px-1 sm:px-4 py-2 text-[10px] sm:text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-right z-[35] bg-secondary/60 text-muted-foreground"><span class="inline-flex items-center justify-end gap-1">Spend</span></th>
+              <th class="px-1 sm:px-4 py-2 text-[10px] sm:text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-right z-[35] bg-secondary/60 text-muted-foreground"><span class="inline-flex items-center justify-end gap-1">Leads</span></th>
+              <th class="px-1 sm:px-4 py-2 text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap text-right z-[35] bg-secondary/60" title="Daily lead cap for this offer group">Cap</th>
+              <th class="px-1 sm:px-4 py-2 text-[10px] sm:text-xs font-semibold uppercase tracking-wider whitespace-nowrap text-right z-[35] bg-secondary/60 text-muted-foreground"><span class="inline-flex items-center justify-end gap-1">CPL</span></th>
+              <th class="px-1 sm:px-4 py-2 text-[10px] sm:text-xs font-semibold text-amber-600 uppercase tracking-wider whitespace-nowrap text-right z-[35] bg-secondary/60">B/E</th>
+              <th class="table-cell px-2 sm:px-4 py-2 text-xs font-semibold text-blue-600 uppercase tracking-wider whitespace-nowrap text-right z-[35] bg-secondary/60">Target CPL★</th>
+              <th class="table-cell px-2 sm:px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap text-right z-[35] bg-secondary/60">Margin</th>
+              <th class="table-cell px-2 sm:px-4 py-2 text-xs font-semibold text-emerald-600 uppercase tracking-wider whitespace-nowrap text-right z-[35] bg-secondary/60">Revenue</th>
+              <th class="table-cell px-2 sm:px-4 py-2 text-xs font-semibold text-violet-600 uppercase tracking-wider whitespace-nowrap text-right z-[35] bg-secondary/60">Profit</th>
+              <th class="table-cell px-2 sm:px-4 py-2 text-xs font-semibold text-orange-500 uppercase tracking-wider whitespace-nowrap text-right z-[35] bg-secondary/60" title="Hook Rate: 3-sec plays / impressions">Hook %</th>
+              <th class="table-cell px-2 sm:px-4 py-2 text-xs font-semibold text-purple-500 uppercase tracking-wider whitespace-nowrap text-right z-[35] bg-secondary/60" title="Hold Score: 3-sec plays ÷ 50% watched">Hold %</th>
+              <th class="table-cell px-2 sm:px-4 py-2 text-xs font-semibold text-cyan-600 uppercase tracking-wider whitespace-nowrap text-right z-[35] bg-secondary/60">CPQC</th>
+              <th class="table-cell px-2 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap text-center z-[35] bg-secondary/60">Notes</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+
+      <!-- YouTube Section -->
+      <div id="youtube-section" class="rounded-lg border border-border bg-card px-4 py-3 space-y-2">
+        <div class="flex items-center gap-3 flex-wrap">
+          <div class="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            <svg class="w-3.5 h-3.5 text-red-500" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"></path></svg>
+            <span>YouTube / Google Ads</span>
+            <span class="text-[10px] text-amber-500 font-normal normal-case ml-1">(data through 2026-05-21)</span>
+          </div>
+          <div class="flex items-center gap-1.5 ml-auto">
+            <span class="text-xs text-muted-foreground">Total spend:</span>
+            <span id="yt-total-spend" class="text-base font-bold text-foreground font-mono">$0.00</span>
+          </div>
+          <div class="h-4 w-px bg-border"></div>
+          <div class="flex items-center gap-3 text-xs text-muted-foreground">
+            <span><span id="yt-total-leads" class="font-semibold text-foreground">0</span> leads</span>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="border-b border-border bg-muted/40 text-muted-foreground">
+                <th class="w-8 px-3 py-2"></th>
+                <th class="px-4 py-2 text-left font-semibold">Offer / Campaign</th>
+                <th class="px-4 py-2 text-left font-semibold">Status</th>
+                <th class="px-4 py-2 text-right font-semibold">Spend</th>
+                <th class="px-4 py-2 text-right font-semibold">Leads</th>
+                <th class="px-4 py-2 text-right font-semibold">CPL</th>
+              </tr>
+            </thead>
+            <tbody id="yt-table-body">
+              <tr class="border-b border-border/30 text-muted-foreground">
+                <td colspan="6" class="px-4 py-6 text-center text-sm">No YouTube data loaded. Import CSV or load sample data.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──
+let campaigns = [];
+let apiMeta = {};
+let currentWindow = 'combined'; // combined, yesterday, last_3d, last_7d
+let groupMode = 'offers'; // offers, accounts
+let expandedGroups = new Set();
+let searchQuery = '';
+
+const TARGET_CPLS = {
+  'Depo LCA':     { target: 140,   breakeven: 200 },
+  'Depo Pulaski': { target: 140,   breakeven: 200 },
+  'Hernia Mesh':  { target: 56.70, breakeven: 81 },
+  'ILM EST':      { target: 325,   breakeven: 405 },
+  'ILM NZT':      { target: 325,   breakeven: 405 },
+  'PowerPort':    { target: 126,   breakeven: 180 },
+  'Roblox':       { target: 120,   breakeven: 140 },
+  'SMA':          { target: 38.68, breakeven: 55.25 },
+  'Suco':         { target: 17.50, breakeven: 25 },
+  'Talcum':       { target: 200,   breakeven: 270 },
+};
+
+const REVENUE_RATES = {
+  'ILM': 442.48, 'ILM EST': 442.48, 'ILM NZT': 442.48,
+  'SMA': 80.07,
+  'Talcum': 300,
+  'Hernia Mesh': 90, 'HM': 90,
+  'PowerPort': 67.50, 'PP': 67.50,
+  'Depo LCA': 984.70, 'Depo Pulaski': 984.70,
+  'Suco': 25, 'Snapchat': 25,
+  'Roblox': 140,
+  'CoverageHub': 0,
+};
+
+const GOAL = 800000;
+
+const TORTCOLORS = {
+  'CoverageHub': 'sky', 'Depo LCA': 'rose', 'Depo Pulaski': 'rose',
+  'Hernia Mesh': 'emerald', 'ILM EST': 'amber', 'ILM NZT': 'amber',
+  'NY JDC NZT': 'amber', 'PowerPort': 'sky', 'Roblox': 'emerald',
+  'RS': 'amber', 'SMA': 'purple', 'Snapchat': 'rose', 'Suco': 'teal',
+  'Talcum': 'indigo', 'Other': 'slate',
+};
+
+const ACCOUNT_COLORS = ['blue','violet','orange','emerald','rose','amber','cyan','slate'];
+let accountColorMap = {};
+let accountColorIdx = 0;
+
+function getAccountColor(account) {
+  if (!accountColorMap[account]) {
+    accountColorMap[account] = ACCOUNT_COLORS[accountColorIdx % ACCOUNT_COLORS.length];
+    accountColorIdx++;
+  }
+  return accountColorMap[account];
+}
+
+// ── Formatting ──
+function fmtUSD(v) { return v == null ? '—' : '$' + Number(v).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtInt(v) { return v == null ? '0' : Number(v).toLocaleString('en-US'); }
+function fmtPct(v) { return v == null ? '—' : v.toFixed(1) + '%'; }
+
+// ── Metrics ──
+function calcMetrics(c) {
+  const w = currentWindow === 'combined' ? c : (c.windows && c.windows[currentWindow] ? c.windows[currentWindow] : c);
+  const spend = currentWindow === 'combined' ? (c.spend || 0) : (w.spend_usd || 0);
+  const leads = currentWindow === 'combined' ? (c.leads || 0) : (w.leads || 0);
+  const impressions = currentWindow === 'combined' ? (c.impressions || 0) : (w.impressions || 0);
+  const cpl = leads > 0 ? spend / leads : null;
+  const target = c.target_cpl || (TARGET_CPLS[c.tort] && TARGET_CPLS[c.tort].target) || null;
+  const breakeven = c.breakeven || (TARGET_CPLS[c.tort] && TARGET_CPLS[c.tort].breakeven) || null;
+  const revenueRate = REVENUE_RATES[c.tort] || 0;
+  const revenue = leads * revenueRate;
+  const profit = revenue - spend;
+  const margin = spend > 0 ? ((revenue - spend) / spend * 100) : null;
+
+  const v3s = currentWindow === 'combined' ? (c.video_3sec_views || 0) : (w.video_3sec_views || 0);
+  const v50 = currentWindow === 'combined' ? (c.video_50pct_views || 0) : (w.video_50pct_views || 0);
+  const hook = impressions > 0 && v3s > 0 ? (v3s / impressions * 100) : null;
+  const hold = v3s > 0 && v50 > 0 ? (v50 / v3s * 100) : null;
+  const cpqc = null; // No qualified leads data in this dataset
+
+  return { spend, leads, impressions, cpl, target, breakeven, revenue, profit, margin, hook, hold, cpqc, budget: c.budget_usd || c.budget || 0, meta_leads: currentWindow === 'combined' ? (c.meta_leads||0) : (w.meta_leads||0) };
+}
+
+// ── CPL Color ──
+function cplColorClass(cpl, target, breakeven) {
+  if (cpl == null) return 'text-muted-foreground';
+  if (target && cpl <= target) return 'text-emerald-600';
+  if (breakeven && cpl <= breakeven) return 'text-amber-600';
+  return 'text-red-600';
+}
+
+function cplBadgeClasses(cpl, target, breakeven) {
+  if (cpl == null) return '';
+  if (target && cpl <= target) return 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20';
+  if (breakeven && cpl <= breakeven) return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
+  return 'bg-red-500/10 text-red-700 border-red-500/20';
+}
+
+function hookColor(v) { if (v==null) return ''; return v>=30?'text-emerald-600':v>=20?'text-amber-500':'text-red-500'; }
+function holdColor(v) { if (v==null) return ''; return v>=50?'text-emerald-600':v>=30?'text-amber-500':'text-red-500'; }
+
+// ── Status rendering ──
+function statusHTML(status) {
+  const s = (status||'').toUpperCase();
+  if (s === 'ACTIVE') return `<span class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>Active</span>`;
+  if (s === 'PAUSED') return `<span class="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-zinc-400 shrink-0"></span>Paused</span>`;
+  return `<span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-500"><span class="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>${status||'Unknown'}</span>`;
+}
+
+function groupStatusHTML(camps) {
+  const active = camps.filter(c => c.status === 'ACTIVE').length;
+  const total = camps.length;
+  if (active === total) return `<span class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>${active} active</span>`;
+  if (active === 0) return `<span class="inline-flex items-center gap-1 text-xs font-medium text-zinc-400"><span class="w-1.5 h-1.5 rounded-full bg-zinc-400 shrink-0"></span>All paused</span>`;
+  return `<span class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>${active} active</span>`;
+}
+
+// ── Account badge ──
+function accountBadge(account, title) {
+  const c = getAccountColor(account);
+  return `<span class="text-xs px-1.5 py-0.5 rounded font-semibold bg-${c}-100 dark:bg-${c}-900/40 text-${c}-800 dark:text-${c}-300 border border-${c}-200 dark:border-${c}-700" title="${title||account}">${account}</span>`;
+}
+
+// ── Chevron SVG ──
+function chevronSVG(color, rotated) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right w-3.5 h-3.5 text-${color}-800 dark:text-${color}-300 transition-transform ${rotated?'rotate-90':''}"><path d="m9 18 6-6-6-6"></path></svg>`;
+}
+
+// ── Layers icon SVG ──
+function layersSVG(color) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layers w-3 h-3 sm:w-3.5 sm:h-3.5 text-${color}-800 dark:text-${color}-300 shrink-0"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"></path><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"></path><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"></path></svg>`;
+}
+
+// ── Notes icon ──
+function notesIcon() {
+  return `<button class="inline-flex items-center justify-center w-6 h-6 rounded hover:bg-muted transition-colors" title="Add notes"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-notebook-pen w-3.5 h-3.5 text-muted-foreground/50"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"></path><path d="M2 6h4"></path><path d="M2 10h4"></path><path d="M2 14h4"></path><path d="M2 18h4"></path><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"></path></svg></button>`;
+}
+
+// ── Render ──
+function reRender() {
+  renderAccountsBar();
+  renderRevenueCard();
+  renderSpendBars();
+  renderTable();
+  renderTotalSpend();
+  updateTimestamp();
+}
+
+function updateTimestamp() {
+  const now = new Date();
+  document.getElementById('timestamp').textContent = 'Updated ' + now.toLocaleTimeString('en-US');
+}
+
+function renderAccountsBar() {
+  const bar = document.getElementById('accounts-bar');
+  bar.innerHTML = '<span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mr-1">Accounts</span>';
+  const accts = {};
+  campaigns.forEach(c => {
+    const key = c.account || c.token_name || 'Unknown';
+    if (!accts[key]) accts[key] = { name: c.account_name || key, active: 0, paused: 0, total: 0 };
+    accts[key].total++;
+    if (c.status === 'ACTIVE') accts[key].active++; else accts[key].paused++;
+  });
+  Object.entries(accts).forEach(([key, a]) => {
+    const hasActive = a.active > 0;
+    const colorCls = hasActive
+      ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
+      : 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/20';
+    const dotCls = hasActive ? 'bg-emerald-500' : 'bg-zinc-400';
+    bar.innerHTML += `<span title="${a.name}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-medium ${colorCls}"><span class="w-1.5 h-1.5 rounded-full shrink-0 ${dotCls}"></span>${a.total} - ${key}</span>`;
+  });
+}
+
+function renderRevenueCard() {
+  let totalRevenue = 0, totalLeads = 0;
+  const tortRevenue = {};
+  campaigns.forEach(c => {
+    const m = calcMetrics(c);
+    const rate = REVENUE_RATES[c.tort] || 0;
+    totalRevenue += m.revenue;
+    totalLeads += m.leads;
+    const tort = c.tort || 'Other';
+    if (!tortRevenue[tort]) tortRevenue[tort] = { revenue: 0, leads: 0 };
+    tortRevenue[tort].revenue += m.revenue;
+    tortRevenue[tort].leads += m.leads;
+  });
+  const pct = GOAL > 0 ? (totalRevenue / GOAL * 100) : 0;
+  const remaining = GOAL - totalRevenue;
+  const dayOfMonth = 22, daysInMonth = 31;
+  const projected = dayOfMonth > 0 ? totalRevenue / dayOfMonth * daysInMonth : 0;
+
+  document.getElementById('rev-amount').textContent = fmtUSD(totalRevenue);
+  document.getElementById('rev-leads').textContent = fmtInt(totalLeads);
+  document.getElementById('rev-bar').style.width = Math.min(pct, 100) + '%';
+  document.getElementById('rev-pct').textContent = pct.toFixed(1) + '% of goal';
+  document.getElementById('rev-remaining').textContent = fmtUSD(remaining) + ' remaining';
+
+  const projEl = document.getElementById('rev-projected');
+  if (projected >= GOAL) {
+    projEl.className = 'ml-auto text-xs font-medium px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
+  } else if (projected >= GOAL * 0.5) {
+    projEl.className = 'ml-auto text-xs font-medium px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-600 border-amber-500/20';
+  } else {
+    projEl.className = 'ml-auto text-xs font-medium px-2 py-0.5 rounded-full border bg-red-500/10 text-red-600 border-red-500/20';
+  }
+  projEl.textContent = '↗ Projected ' + fmtUSD(projected);
+
+  const bd = document.getElementById('rev-breakdown');
+  bd.innerHTML = '';
+  const ABBREV = {'ILM EST':'ILM','ILM NZT':'ILM','Hernia Mesh':'HM','PowerPort':'PP','Depo Pulaski':'Depo','Depo LCA':'Depo'};
+  Object.entries(tortRevenue).sort((a,b) => b[1].revenue - a[1].revenue).forEach(([tort, d]) => {
+    if (d.revenue <= 0) return;
+    const label = ABBREV[tort] || tort;
+    bd.innerHTML += `<span class="text-[10px] text-muted-foreground"><span class="font-medium text-foreground">${label}</span> ${fmtUSD(d.revenue)}<span class="opacity-60"> (${d.leads} leads)</span></span>`;
+  });
+}
+
+function renderSpendBars() {
+  const container = document.getElementById('spend-bars');
+  container.innerHTML = '';
+  // Group by account
+  const accts = {};
+  campaigns.forEach(c => {
+    const key = c.account || 'Unknown';
+    if (!accts[key]) accts[key] = { name: c.account_name || key, spend: 0, budget: 0 };
+    const m = calcMetrics(c);
+    accts[key].spend += m.spend;
+    accts[key].budget += m.budget;
+  });
+  // Only show accounts that have spend limits (budget > 0)
+  Object.entries(accts).forEach(([key, a]) => {
+    if (a.budget <= 0) return;
+    const pct = a.budget > 0 ? (a.spend / a.budget * 100) : 0;
+    const c = getAccountColor(key);
+    const barColor = pct > 90 ? 'bg-red-500' : pct > 70 ? 'bg-amber-500' : 'bg-emerald-500';
+    container.innerHTML += `
+      <div class="rounded-lg border border-border bg-card px-4 py-2.5 flex items-center gap-3 text-xs">
+        ${accountBadge(key, a.name)}
+        <span class="text-muted-foreground">Spend limit:</span>
+        <span class="font-mono font-semibold text-foreground">${fmtUSD(a.budget)}</span>
+        <span class="text-muted-foreground">Used:</span>
+        <span class="font-mono font-semibold text-amber-600">${fmtUSD(a.spend)}</span>
+        <div class="w-24 h-1.5 rounded-full bg-secondary overflow-hidden">
+          <div class="h-full rounded-full ${barColor} transition-all" style="width: ${Math.min(pct,100)}%;"></div>
+        </div>
+        <span class="text-muted-foreground">${pct.toFixed(1)}%</span>
+      </div>
+    `;
+  });
+}
+
+function renderTotalSpend() {
+  let total = 0;
+  campaigns.forEach(c => { total += calcMetrics(c).spend; });
+  document.getElementById('total-spend').textContent = fmtUSD(total);
+}
+
+function renderTable() {
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = '';
+  if (campaigns.length === 0) {
+    tbody.innerHTML = '<tr class="border-b border-border/30 text-muted-foreground"><td colspan="18" class="px-4 py-8 text-center text-sm">No data loaded. Click "Load Sample Data" or import a CSV/JSON file.</td></tr>';
+    return;
+  }
+
+  // Group campaigns
+  const groups = {};
+  const groupKey = groupMode === 'offers' ? 'tort' : 'account';
+  campaigns.forEach(c => {
+    const key = c[groupKey] || 'Other';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(c);
+  });
+
+  // Filter
+  const q = searchQuery.toLowerCase();
+
+  // Sort groups by spend descending
+  const sortedGroups = Object.entries(groups).sort((a, b) => {
+    const sa = a[1].reduce((s, c) => s + calcMetrics(c).spend, 0);
+    const sb = b[1].reduce((s, c) => s + calcMetrics(c).spend, 0);
+    return sb - sa;
+  });
+
+  sortedGroups.forEach(([groupName, camps]) => {
+    // Filter check
+    if (q) {
+      const match = groupName.toLowerCase().includes(q) || camps.some(c => (c.campaign_name||'').toLowerCase().includes(q) || (c.account||'').toLowerCase().includes(q));
+      if (!match) return;
+    }
+
+    const color = groupMode === 'offers' ? (TORTCOLORS[groupName] || 'slate') : getAccountColor(groupName);
+    const isExpanded = expandedGroups.has(groupName);
+    const groupId = 'g-' + groupName.replace(/[^a-zA-Z0-9]/g, '_');
+
+    // Aggregate metrics for group
+    let gSpend = 0, gLeads = 0, gBudget = 0, gImpressions = 0, gMetaLeads = 0;
+    let gV3s = 0, gV50 = 0, gRevenue = 0;
+    camps.forEach(c => {
+      const m = calcMetrics(c);
+      gSpend += m.spend; gLeads += m.leads; gBudget += m.budget; gImpressions += m.impressions;
+      gMetaLeads += m.meta_leads;
+      gRevenue += m.revenue;
+    });
+    const gCPL = gLeads > 0 ? gSpend / gLeads : null;
+    const gTarget = TARGET_CPLS[groupName] ? TARGET_CPLS[groupName].target : null;
+    const gBreakeven = TARGET_CPLS[groupName] ? TARGET_CPLS[groupName].breakeven : null;
+    const gProfit = gRevenue - gSpend;
+    const gMargin = gSpend > 0 ? ((gRevenue - gSpend) / gSpend * 100) : null;
+
+    // Unique accounts
+    const uniqueAccounts = [...new Set(camps.map(c => c.account || 'Unknown'))];
+
+    // Group row
+    tbody.innerHTML += `
+      <tr onclick="toggleGroup('${groupName}')" class="border-b-2 border-t border-border/60 cursor-pointer transition-colors bg-${color}-50 dark:bg-${color}-950/40 hover:brightness-95">
+        <td class="px-1 sm:px-3 py-2 sm:py-2.5 text-center sm:sticky sm:left-0 z-10 bg-${color}-50 dark:bg-${color}-950/40">${chevronSVG(color, isExpanded)}</td>
+        <td class="px-1 sm:px-4 py-2 sm:py-2.5 sm:sticky sm:left-8 z-10 bg-${color}-50 dark:bg-${color}-950/40 sm:w-[320px] sm:min-w-[320px]">
+          <div class="flex flex-col gap-0.5">
+            <div class="flex items-center gap-1.5">
+              ${layersSVG(color)}
+              <span class="font-bold text-[11px] sm:text-sm text-${color}-800 dark:text-${color}-300">${groupName}</span>
+            </div>
+          </div>
+        </td>
+        <td class="table-cell px-1 sm:px-2 py-2.5 sm:sticky sm:left-[352px] z-10 bg-${color}-50 dark:bg-${color}-950/40 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.08)] sm:w-[120px] overflow-hidden">
+          <div class="flex flex-wrap gap-0.5">
+            <span class="text-xs text-muted-foreground">${uniqueAccounts.length} account${uniqueAccounts.length!==1?'s':''}</span>
+          </div>
+        </td>
+        <td class="px-1 sm:px-4 py-2 sm:py-2.5">${groupStatusHTML(camps)}</td>
+        <td class="table-cell px-2 sm:px-4 py-2.5 text-right font-mono text-xs font-semibold whitespace-nowrap"><span class="text-muted-foreground">—</span></td>
+        <td class="px-1 sm:px-4 py-2 sm:py-2.5 text-right font-mono text-[11px] sm:text-xs font-bold whitespace-nowrap">${gSpend > 0 ? '<span>'+fmtUSD(gSpend)+'</span>' : '<span class="text-muted-foreground">$0.00</span>'}</td>
+        <td class="px-1 sm:px-4 py-2 sm:py-2.5 text-right whitespace-nowrap">
+          <div class="inline-flex items-center gap-1 justify-end">
+            <span class="${gLeads > 0 ? '' : 'text-muted-foreground'} font-mono text-[11px] sm:text-xs">${fmtInt(gLeads)}</span>
+          </div>
+        </td>
+        <td class="px-1 sm:px-4 py-2 sm:py-2.5 text-right whitespace-nowrap"><span class="text-muted-foreground text-xs">∞</span></td>
+        <td class="px-1 sm:px-4 py-2 sm:py-2.5 text-right whitespace-nowrap">
+          ${gCPL != null ? `<span class="font-mono text-xs font-semibold ${cplColorClass(gCPL, gTarget, gBreakeven)}">${fmtUSD(gCPL)}</span>` : '<span class="text-muted-foreground">—</span>'}
+        </td>
+        <td class="px-1 sm:px-4 py-2.5 text-right whitespace-nowrap">${gBreakeven ? '<span class="text-amber-600 text-xs font-mono">'+fmtUSD(gBreakeven)+'</span>' : '<span class="text-muted-foreground text-xs">—</span>'}</td>
+        <td class="table-cell px-2 sm:px-4 py-2.5 text-right whitespace-nowrap">${gTarget ? '<span class="text-blue-500 text-xs font-mono font-semibold">'+fmtUSD(gTarget)+'</span>' : '<span class="text-muted-foreground text-xs">—</span>'}</td>
+        <td class="table-cell px-2 sm:px-4 py-2.5 text-right whitespace-nowrap">${gMargin != null ? `<span class="text-xs font-mono font-semibold ${gMargin>=0?'text-emerald-600':'text-red-600'}">${gMargin>=0?'+':''}${gMargin.toFixed(1)}%</span>` : '<span class="text-muted-foreground text-xs">—</span>'}</td>
+        <td class="table-cell px-2 sm:px-4 py-2.5 text-right whitespace-nowrap">${gRevenue > 0 ? '<span class="text-emerald-600 text-xs font-mono font-semibold">'+fmtUSD(gRevenue)+'</span>' : '<span class="text-muted-foreground text-xs">—</span>'}</td>
+        <td class="table-cell px-2 sm:px-4 py-2.5 text-right whitespace-nowrap">${gRevenue > 0 || gSpend > 0 ? `<span class="text-xs font-mono font-semibold ${gProfit>=0?'text-emerald-600':'text-red-600'}">${fmtUSD(gProfit)}</span>` : '<span class="text-muted-foreground text-xs">—</span>'}</td>
+        <td class="table-cell px-2 sm:px-4 py-2.5"></td>
+        <td class="table-cell px-2 sm:px-4 py-2.5"></td>
+        <td class="table-cell px-2 sm:px-4 py-2.5"></td>
+        <td class="table-cell px-2 py-2.5 text-center">${notesIcon()}</td>
+      </tr>
+    `;
+
+    // Child rows (campaigns)
+    if (isExpanded) {
+      camps.sort((a,b) => calcMetrics(b).spend - calcMetrics(a).spend).forEach(c => {
+        const m = calcMetrics(c);
+        const isPaused = c.status !== 'ACTIVE';
+        const opClass = isPaused ? 'opacity-60' : '';
+        const acctColor = getAccountColor(c.account || 'Unknown');
+
+        tbody.innerHTML += `
+          <tr class="border-b border-border/30 cursor-pointer transition-colors hover:bg-secondary/10 ${opClass} bg-background">
+            <td class="px-1 sm:px-3 py-1.5 sm:py-2 text-center sm:sticky sm:left-0 z-10 bg-inherit">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right w-3 h-3 text-muted-foreground transition-transform"><path d="m9 18 6-6-6-6"></path></svg>
+            </td>
+            <td class="px-1 sm:px-4 py-1.5 sm:py-2 sm:sticky sm:left-8 z-10 bg-inherit sm:w-[320px] sm:min-w-[320px]">
+              <div class="flex flex-col gap-0.5 pl-1 sm:pl-4">
+                <span class="font-medium text-foreground text-[11px] sm:text-sm break-words leading-snug" title="${c.campaign_name||''}">${c.campaign_name||'Unnamed'}</span>
+              </div>
+            </td>
+            <td class="table-cell px-2 sm:px-4 py-2 sm:sticky sm:left-[352px] z-10 bg-inherit shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)] sm:w-[120px] overflow-hidden">
+              ${accountBadge(c.account || 'Unknown', c.account_name || c.account)}
+            </td>
+            <td class="px-1 sm:px-4 py-1.5 sm:py-2">${statusHTML(c.status)}</td>
+            <td class="table-cell px-2 sm:px-4 py-2 text-right font-mono text-xs whitespace-nowrap">${m.budget > 0 ? fmtUSD(m.budget) : '—'}</td>
+            <td class="px-1 sm:px-4 py-1.5 sm:py-2 text-right font-mono text-[11px] sm:text-xs whitespace-nowrap">${m.spend > 0 ? fmtUSD(m.spend) : '<span class="text-muted-foreground">$0.00</span>'}</td>
+            <td class="px-1 sm:px-4 py-1.5 sm:py-2 text-right whitespace-nowrap">
+              <div class="flex flex-col items-end gap-0.5">
+                <span class="${m.leads>0?'':'text-muted-foreground'} font-mono text-[11px] sm:text-xs">${fmtInt(m.leads)}</span>
+              </div>
+            </td>
+            <td class="px-1 sm:px-4 py-1.5 sm:py-2 text-right whitespace-nowrap"><span class="text-muted-foreground text-xs">${c.cap || '∞'}</span></td>
+            <td class="px-1 sm:px-4 py-1.5 sm:py-2 text-right whitespace-nowrap">
+              ${m.cpl != null ? `<span class="font-mono text-xs font-semibold ${cplColorClass(m.cpl, m.target, m.breakeven)}">${fmtUSD(m.cpl)}</span>` : '<span class="text-muted-foreground">—</span>'}
+            </td>
+            <td class="px-1 sm:px-4 py-2 text-right whitespace-nowrap">${m.breakeven ? '<span class="text-amber-600 text-xs font-mono">'+fmtUSD(m.breakeven)+'</span>' : '<span class="text-muted-foreground text-xs">—</span>'}</td>
+            <td class="table-cell px-2 sm:px-4 py-2 text-right whitespace-nowrap">${m.target ? '<span class="text-blue-500 text-xs font-mono font-semibold">'+fmtUSD(m.target)+'</span>' : '<span class="text-muted-foreground text-xs">—</span>'}</td>
+            <td class="table-cell px-2 sm:px-4 py-2 text-right whitespace-nowrap">${m.margin != null ? `<span class="text-xs font-mono font-semibold ${m.margin>=0?'text-emerald-600':'text-red-600'}">${m.margin>=0?'+':''}${m.margin.toFixed(1)}%</span>` : '<span class="text-muted-foreground text-xs">—</span>'}</td>
+            <td class="table-cell px-2 sm:px-4 py-2 text-right whitespace-nowrap">${m.revenue > 0 ? '<span class="text-emerald-600 text-xs font-mono font-semibold">'+fmtUSD(m.revenue)+'</span>' : '<span class="text-muted-foreground text-xs">—</span>'}</td>
+            <td class="table-cell px-2 sm:px-4 py-2 text-right whitespace-nowrap">${m.revenue > 0 || m.spend > 0 ? `<span class="text-xs font-mono font-semibold ${m.profit>=0?'text-emerald-600':'text-red-600'}">${fmtUSD(m.profit)}</span>` : '<span class="text-muted-foreground text-xs">—</span>'}</td>
+            <td class="table-cell px-2 sm:px-4 py-2 text-right whitespace-nowrap">${m.hook != null ? `<span class="text-xs font-mono font-semibold ${hookColor(m.hook)}">${m.hook.toFixed(1)}%</span>` : ''}</td>
+            <td class="table-cell px-2 sm:px-4 py-2 text-right whitespace-nowrap">${m.hold != null ? `<span class="text-xs font-mono font-semibold ${holdColor(m.hold)}">${m.hold.toFixed(1)}%</span>` : ''}</td>
+            <td class="table-cell px-2 sm:px-4 py-2 text-right whitespace-nowrap">${m.cpqc != null ? `<span class="text-cyan-600 font-semibold text-xs font-mono">${fmtUSD(m.cpqc)}</span>` : ''}</td>
+            <td class="table-cell px-2 py-2 text-center">${c.notes ? `<span class="text-xs text-muted-foreground">${c.notes}</span>` : notesIcon()}</td>
+          </tr>
+        `;
+      });
+    }
+  });
+}
+
+// ── Interactions ──
+function toggleGroup(name) {
+  if (expandedGroups.has(name)) expandedGroups.delete(name);
+  else expandedGroups.add(name);
+  renderTable();
+}
+
+function setGroupMode(mode) {
+  groupMode = mode;
+  expandedGroups.clear();
+  document.getElementById('btn-offers').className = mode === 'offers' ? 'px-3 py-1.5 text-xs font-medium transition-colors bg-primary text-primary-foreground' : 'px-3 py-1.5 text-xs font-medium transition-colors bg-secondary text-muted-foreground hover:text-foreground';
+  document.getElementById('btn-accounts').className = mode === 'accounts' ? 'px-3 py-1.5 text-xs font-medium transition-colors bg-primary text-primary-foreground' : 'px-3 py-1.5 text-xs font-medium transition-colors bg-secondary text-muted-foreground hover:text-foreground';
+  reRender();
+}
+
+function setWindow(w) {
+  currentWindow = w;
+  ['combined','yesterday','last_3d','last_7d'].forEach(k => {
+    const btn = document.getElementById('btn-' + k);
+    btn.className = k === w
+      ? 'px-3 py-1.5 text-xs font-medium transition-colors border-l first:border-l-0 border-border bg-primary text-primary-foreground'
+      : 'px-3 py-1.5 text-xs font-medium transition-colors border-l border-border bg-secondary text-muted-foreground hover:text-foreground';
+  });
+  reRender();
+}
+
+function filterTable() {
+  searchQuery = document.getElementById('search-input').value;
+  renderTable();
+}
+
+function toggleDarkMode() {
+  const html = document.documentElement;
+  html.classList.toggle('dark');
+  const isDark = html.classList.contains('dark');
+  document.getElementById('icon-sun').classList.toggle('hidden', !isDark);
+  document.getElementById('icon-moon').classList.toggle('hidden', isDark);
+}
+
+// Initialize dark mode icons
+(function() {
+  const isDark = document.documentElement.classList.contains('dark');
+  document.getElementById('icon-sun').classList.toggle('hidden', !isDark);
+  document.getElementById('icon-moon').classList.toggle('hidden', isDark);
+})();
+
+// ── File Import ──
+function handleFileImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const raw = e.target.result;
+    if (file.name.endsWith('.json')) {
+      try {
+        const data = JSON.parse(raw);
+        if (data.campaigns) {
+          campaigns.length = 0;
+          data.campaigns.forEach(c => campaigns.push(c));
+          if (data.target_cpls) Object.assign(TARGET_CPLS, data.target_cpls);
+        } else if (Array.isArray(data)) {
+          campaigns.length = 0;
+          data.forEach(c => campaigns.push(c));
+        }
+        reRender();
+      } catch(err) { alert('Invalid JSON: ' + err.message); }
+    } else {
+      // CSV
+      try {
+        const lines = raw.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        campaigns.length = 0;
+        for (let i = 1; i < lines.length; i++) {
+          const vals = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+          const obj = {};
+          headers.forEach((h, idx) => { obj[h] = vals[idx]; });
+          // Parse numbers
+          ['budget','budget_usd','spend','leads','meta_leads','impressions','target_cpl','breakeven'].forEach(k => {
+            if (obj[k] !== undefined && obj[k] !== '') obj[k] = parseFloat(obj[k]) || 0;
+          });
+          campaigns.push(obj);
+        }
+        reRender();
+      } catch(err) { alert('CSV parse error: ' + err.message); }
+    }
+  };
+  reader.readAsText(file);
+}
+
+function loadSampleData() {
+  campaigns.length = 0;
+  _FULL_API_DATA.campaigns.forEach(c => campaigns.push(c));
+  if (_FULL_API_DATA.target_cpls) {
+    Object.entries(_FULL_API_DATA.target_cpls).forEach(([k,v]) => {
+      if (v.target != null) TARGET_CPLS[k] = v;
+    });
+  }
+  reRender();
+}
+
+// Initial render
+reRender();
+</script>
+
+<!-- Pre-loaded API data -->
+<script>
+var _FULL_API_DATA = {"generated_at": "2026-05-22T08:13:42.683450-04:00", "date_labels": {"yesterday": "May 21", "last_3d": "May 19\u2013May 21", "last_7d": "May 15\u2013May 21"}, "nzd_to_usd": 0.587, "broughton_hm_29": {"yesterday": 5, "last_3d": 17, "last_7d": 50}, "target_cpls": {"Depo Pulaski": {"target": 140, "breakeven": 200}, "Hernia Mesh": {"target": 56.7, "breakeven": 81}, "ILM EST": {"target": 325, "breakeven": 405}, "ILM NZT": {"target": 325, "breakeven": 405}, "Talcum": {"target": 200, "breakeven": 270}, "CoverageHub": {"target": null, "breakeven": null}}, "campaigns": [{"campaign_id": "120246938369370624", "campaign_name": "Depo CBO dupe Pulaski", "account": "KBM1", "account_name": "Kelly Fredrickson 1-4", "token_name": "KBM1", "status": "ACTIVE", "currency": "USD", "budget_native": 850.0, "budget_usd": 850.0, "tort": "Depo Pulaski", "target_cpl": 140, "breakeven": 200, "windows": {"yesterday": {"spend_usd": 786.97, "spend_native": 786.97, "leads": 7, "meta_leads": 7, "lp_leads": 7, "cpl": 112.42, "impressions": 19670}, "last_3d": {"spend_usd": 1954.39, "spend_native": 1954.39, "leads": 10, "meta_leads": 11, "lp_leads": 10, "cpl": 195.44, "impressions": 40857}, "last_7d": {"spend_usd": 3998.03, "spend_native": 3998.03, "leads": 20, "meta_leads": 22, "lp_leads": 20, "cpl": 199.9, "impressions": 70664}}, "budget": 850.0, "spend": 3998.03, "leads": 20, "meta_leads": 22, "cap": "", "impressions": 70664, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120241613069680201", "campaign_name": "Depo Pulaski Warm Up", "account": "KBM1", "account_name": "KF 1-5", "token_name": "KBM1", "status": "ACTIVE", "currency": "USD", "budget_native": 100.0, "budget_usd": 100.0, "tort": "Depo Pulaski", "target_cpl": 140, "breakeven": 200, "windows": {"yesterday": {"spend_usd": 17.9, "spend_native": 17.9, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 380}, "last_3d": {"spend_usd": 52.6, "spend_native": 52.6, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 1077}, "last_7d": {"spend_usd": 119.14, "spend_native": 119.14, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 2711}}, "budget": 100.0, "spend": 119.14, "leads": 0, "meta_leads": 0, "cap": "", "impressions": 2711, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120247728436740397", "campaign_name": "29 Hernia Mesh CBO", "account": "ROAS_28", "account_name": "A", "token_name": "ROAS_28", "status": "PAUSED", "currency": "USD", "budget_native": 600.0, "budget_usd": 600.0, "tort": "Hernia Mesh", "target_cpl": 56.7, "breakeven": 81, "windows": {"yesterday": {"spend_usd": 596.27, "spend_native": 596.27, "leads": 5, "meta_leads": 6, "lp_leads": 5, "cpl": 119.25, "impressions": 64365}, "last_3d": {"spend_usd": 2207.99, "spend_native": 2207.99, "leads": 17, "meta_leads": 18, "lp_leads": 17, "cpl": 129.88, "impressions": 182391}, "last_7d": {"spend_usd": 6670.83, "spend_native": 6670.83, "leads": 50, "meta_leads": 53, "lp_leads": 50, "cpl": 133.42, "impressions": 527348}}, "budget": 600.0, "spend": 6670.83, "leads": 50, "meta_leads": 53, "cap": "", "impressions": 527348, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120243180977050384", "campaign_name": "31 Hernia Mesh Charlie CBO", "account": "31_ballet", "account_name": "1", "token_name": "31_ballet", "status": "PAUSED", "currency": "USD", "budget_native": 1000.0, "budget_usd": 1000.0, "tort": "Hernia Mesh", "target_cpl": 56.7, "breakeven": 81, "windows": {"yesterday": {"spend_usd": 340.47, "spend_native": 340.47, "leads": 11, "meta_leads": 11, "lp_leads": 11, "cpl": 30.95, "impressions": 11361}, "last_3d": {"spend_usd": 1941.51, "spend_native": 1941.51, "leads": 36, "meta_leads": 34, "lp_leads": 36, "cpl": 53.93, "impressions": 58834}, "last_7d": {"spend_usd": 3993.32, "spend_native": 3993.32, "leads": 90, "meta_leads": 89, "lp_leads": 90, "cpl": 44.37, "impressions": 109502}}, "budget": 1000.0, "spend": 3993.32, "leads": 90, "meta_leads": 89, "cap": "", "impressions": 109502, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120243157302830384", "campaign_name": "31 Hernia Mesh Jordan CBO", "account": "31_ballet", "account_name": "1", "token_name": "31_ballet", "status": "PAUSED", "currency": "USD", "budget_native": 1100.0, "budget_usd": 1100.0, "tort": "Hernia Mesh", "target_cpl": 56.7, "breakeven": 81, "windows": {"yesterday": {"spend_usd": 446.45, "spend_native": 446.45, "leads": 11, "meta_leads": 11, "lp_leads": 11, "cpl": 40.59, "impressions": 11049}, "last_3d": {"spend_usd": 1289.04, "spend_native": 1289.04, "leads": 40, "meta_leads": 40, "lp_leads": 40, "cpl": 32.23, "impressions": 30477}, "last_7d": {"spend_usd": 1931.93, "spend_native": 1931.93, "leads": 75, "meta_leads": 77, "lp_leads": 75, "cpl": 25.76, "impressions": 47074}}, "budget": 1100.0, "spend": 1931.93, "leads": 75, "meta_leads": 77, "cap": "", "impressions": 47074, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120243272326430384", "campaign_name": "31 Hernia Mesh Morane CBO", "account": "31_ballet", "account_name": "1", "token_name": "31_ballet", "status": "PAUSED", "currency": "USD", "budget_native": 750.0, "budget_usd": 750.0, "tort": "Hernia Mesh", "target_cpl": 56.7, "breakeven": 81, "windows": {"yesterday": {"spend_usd": 285.57, "spend_native": 285.57, "leads": 5, "meta_leads": 5, "lp_leads": 5, "cpl": 57.11, "impressions": 5720}, "last_3d": {"spend_usd": 1167.19, "spend_native": 1167.19, "leads": 30, "meta_leads": 30, "lp_leads": 30, "cpl": 38.91, "impressions": 25667}, "last_7d": {"spend_usd": 1803.77, "spend_native": 1803.77, "leads": 48, "meta_leads": 47, "lp_leads": 48, "cpl": 37.58, "impressions": 41882}}, "budget": 750.0, "spend": 1803.77, "leads": 48, "meta_leads": 47, "cap": "", "impressions": 41882, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120246086932860751", "campaign_name": "Blueberry ILM CBO", "account": "16_blueberry", "account_name": "BLUEBERRY $ for (whitesroofingcompany.com) 51", "token_name": "16_blueberry", "status": "ACTIVE", "currency": "USD", "budget_native": 450.0, "budget_usd": 450.0, "tort": "ILM EST", "target_cpl": 325, "breakeven": 405, "windows": {"yesterday": {"spend_usd": 416.5, "spend_native": 416.5, "leads": 5, "meta_leads": 1, "lp_leads": 5, "cpl": 83.3, "impressions": 20157}, "last_3d": {"spend_usd": 1238.42, "spend_native": 1238.42, "leads": 6, "meta_leads": 2, "lp_leads": 6, "cpl": 206.4, "impressions": 52952}, "last_7d": {"spend_usd": 1484.78, "spend_native": 1484.78, "leads": 9, "meta_leads": 5, "lp_leads": 9, "cpl": 164.98, "impressions": 62288}}, "budget": 450.0, "spend": 1484.78, "leads": 9, "meta_leads": 5, "cap": "", "impressions": 62288, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120246366593580751", "campaign_name": "Blueberry ILM CBO - Open Age Range", "account": "16_blueberry", "account_name": "BLUEBERRY $ for (whitesroofingcompany.com) 51", "token_name": "16_blueberry", "status": "ACTIVE", "currency": "USD", "budget_native": 400.0, "budget_usd": 400.0, "tort": "ILM EST", "target_cpl": 325, "breakeven": 405, "windows": {"yesterday": {"spend_usd": 365.92, "spend_native": 365.92, "leads": 5, "meta_leads": 4, "lp_leads": 5, "cpl": 73.18, "impressions": 12142}, "last_3d": {"spend_usd": 365.92, "spend_native": 365.92, "leads": 6, "meta_leads": 4, "lp_leads": 6, "cpl": 60.99, "impressions": 12142}, "last_7d": {"spend_usd": 365.92, "spend_native": 365.92, "leads": 9, "meta_leads": 4, "lp_leads": 9, "cpl": 40.66, "impressions": 12142}}, "budget": 400.0, "spend": 365.92, "leads": 9, "meta_leads": 4, "cap": "", "impressions": 12142, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120244551395720331", "campaign_name": "4 ILM Jordan CBO H&P", "account": "barbara_44448 (NZD)", "account_name": "aeml 44448", "token_name": "barbara_44448", "status": "ACTIVE", "currency": "NZD", "budget_native": 850.0, "budget_usd": 498.95, "tort": "ILM NZT", "target_cpl": 325, "breakeven": 405, "windows": {"yesterday": {"spend_usd": 529.45, "spend_native": 901.96, "leads": 2, "meta_leads": 1, "lp_leads": 2, "cpl": 264.73, "impressions": 19467}, "last_3d": {"spend_usd": 1263.96, "spend_native": 2153.25, "leads": 5, "meta_leads": 5, "lp_leads": 5, "cpl": 252.79, "impressions": 39625}, "last_7d": {"spend_usd": 2465.56, "spend_native": 4200.27, "leads": 9, "meta_leads": 9, "lp_leads": 9, "cpl": 273.95, "impressions": 70023}}, "budget": 498.95, "spend": 2465.56, "leads": 9, "meta_leads": 9, "cap": "", "impressions": 70023, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120244671443810331", "campaign_name": "4 ILM Morane CBO H&P", "account": "barbara_44448 (NZD)", "account_name": "aeml 44448", "token_name": "barbara_44448", "status": "ACTIVE", "currency": "NZD", "budget_native": 350.0, "budget_usd": 205.45, "tort": "ILM NZT", "target_cpl": 325, "breakeven": 405, "windows": {"yesterday": {"spend_usd": 224.55, "spend_native": 382.54, "leads": 1, "meta_leads": 1, "lp_leads": 1, "cpl": 224.55, "impressions": 8964}, "last_3d": {"spend_usd": 824.32, "spend_native": 1404.3, "leads": 1, "meta_leads": 1, "lp_leads": 1, "cpl": 824.32, "impressions": 27145}, "last_7d": {"spend_usd": 2797.24, "spend_native": 4765.32, "leads": 5, "meta_leads": 5, "lp_leads": 5, "cpl": 559.45, "impressions": 90849}}, "budget": 205.45, "spend": 2797.24, "leads": 5, "meta_leads": 5, "cap": "", "impressions": 90849, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "52529088611219", "campaign_name": "NY JDC CBO Charlie", "account": "ROAS_28 (NZD)", "account_name": "D", "token_name": "ROAS_28", "status": "PAUSED", "currency": "NZD", "budget_native": 300.0, "budget_usd": 176.1, "tort": "ILM NZT", "target_cpl": 325, "breakeven": 405, "windows": {"yesterday": {"spend_usd": 0.0, "spend_native": 0, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 0}, "last_3d": {"spend_usd": 0.0, "spend_native": 0, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 0}, "last_7d": {"spend_usd": 143.18, "spend_native": 243.91, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 3243}}, "budget": 176.1, "spend": 143.18, "leads": 0, "meta_leads": 0, "cap": "", "impressions": 3243, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "52529086711419", "campaign_name": "NY JDC CBO Jordan", "account": "ROAS_28 (NZD)", "account_name": "D", "token_name": "ROAS_28", "status": "PAUSED", "currency": "NZD", "budget_native": 420.0, "budget_usd": 246.54, "tort": "ILM NZT", "target_cpl": 325, "breakeven": 405, "windows": {"yesterday": {"spend_usd": 0.0, "spend_native": 0, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 0}, "last_3d": {"spend_usd": 0.0, "spend_native": 0, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 0}, "last_7d": {"spend_usd": 886.83, "spend_native": 1510.79, "leads": 1, "meta_leads": 1, "lp_leads": null, "cpl": 886.83, "impressions": 12847}}, "budget": 246.54, "spend": 886.83, "leads": 1, "meta_leads": 1, "cap": "", "impressions": 12847, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "52528294899619", "campaign_name": "NY JDC CBO Morane", "account": "ROAS_28 (NZD)", "account_name": "D", "token_name": "ROAS_28", "status": "PAUSED", "currency": "NZD", "budget_native": 850.0, "budget_usd": 498.95, "tort": "ILM NZT", "target_cpl": 325, "breakeven": 405, "windows": {"yesterday": {"spend_usd": 0.0, "spend_native": 0.0, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 0}, "last_3d": {"spend_usd": 835.02, "spend_native": 1422.52, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 38546}, "last_7d": {"spend_usd": 2763.87, "spend_native": 4708.47, "leads": 9, "meta_leads": 9, "lp_leads": null, "cpl": 307.1, "impressions": 103293}}, "budget": 498.95, "spend": 2763.87, "leads": 9, "meta_leads": 9, "cap": "", "impressions": 103293, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120244872406670751", "campaign_name": "Gold Guide CBO", "account": "16_blueberry", "account_name": "BLUEBERRY $ for (whitesroofingcompany.com) 51", "token_name": "16_blueberry", "status": "ACTIVE", "currency": "USD", "budget_native": 50.0, "budget_usd": 50.0, "tort": "Other", "target_cpl": null, "breakeven": null, "windows": {"yesterday": {"spend_usd": 46.84, "spend_native": 46.84, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 241}, "last_3d": {"spend_usd": 167.8, "spend_native": 167.8, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 1133}, "last_7d": {"spend_usd": 370.83, "spend_native": 370.83, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 2864}}, "budget": 50.0, "spend": 370.83, "leads": 0, "meta_leads": 0, "cap": "", "impressions": 2864, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "52533236919819", "campaign_name": "DD - D PowerPort OJ CBO", "account": "ROAS_28 (NZD)", "account_name": "D", "token_name": "ROAS_28", "status": "ACTIVE", "currency": "NZD", "budget_native": 510.0, "budget_usd": 299.37, "tort": "PowerPort", "target_cpl": null, "breakeven": null, "windows": {"yesterday": {"spend_usd": 49.0, "spend_native": 83.48, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 1505}, "last_3d": {"spend_usd": 49.0, "spend_native": 83.48, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 1505}, "last_7d": {"spend_usd": 49.0, "spend_native": 83.48, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 1505}}, "budget": 299.37, "spend": 49.0, "leads": 0, "meta_leads": 0, "cap": "", "impressions": 1505, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120244878177090624", "campaign_name": "PowerPort CBO Linkout", "account": "KBM1", "account_name": "Kelly Fredrickson 1-4", "token_name": "KBM1", "status": "PAUSED", "currency": "USD", "budget_native": 250.0, "budget_usd": 250.0, "tort": "PowerPort", "target_cpl": null, "breakeven": null, "windows": {"yesterday": {"spend_usd": 335.53, "spend_native": 335.53, "leads": 1, "meta_leads": 1, "lp_leads": null, "cpl": 335.53, "impressions": 10633}, "last_3d": {"spend_usd": 647.17, "spend_native": 647.17, "leads": 2, "meta_leads": 2, "lp_leads": null, "cpl": 323.58, "impressions": 20618}, "last_7d": {"spend_usd": 647.17, "spend_native": 647.17, "leads": 2, "meta_leads": 2, "lp_leads": null, "cpl": 323.58, "impressions": 20618}}, "budget": 250.0, "spend": 647.17, "leads": 2, "meta_leads": 2, "cap": "", "impressions": 20618, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120245267602250624", "campaign_name": "KBM1-4 SMA CBO H&P", "account": "KBM1", "account_name": "Kelly Fredrickson 1-4", "token_name": "KBM1", "status": "PAUSED", "currency": "USD", "budget_native": 50.0, "budget_usd": 50.0, "tort": "SMA", "target_cpl": null, "breakeven": null, "windows": {"yesterday": {"spend_usd": 0, "spend_native": 0, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 0}, "last_3d": {"spend_usd": 12.61, "spend_native": 12.61, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 173}, "last_7d": {"spend_usd": 12.61, "spend_native": 12.61, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 173}}, "budget": 50.0, "spend": 12.61, "leads": 0, "meta_leads": 0, "cap": "", "impressions": 173, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120246520318830624", "campaign_name": "SMA Morane CBO H&P", "account": "KBM1", "account_name": "Kelly Fredrickson 1-4", "token_name": "KBM1", "status": "PAUSED", "currency": "USD", "budget_native": 50.0, "budget_usd": 50.0, "tort": "SMA", "target_cpl": null, "breakeven": null, "windows": {"yesterday": {"spend_usd": 0, "spend_native": 0, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 0}, "last_3d": {"spend_usd": 55.68, "spend_native": 55.68, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 799}, "last_7d": {"spend_usd": 55.68, "spend_native": 55.68, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 799}}, "budget": 50.0, "spend": 55.68, "leads": 0, "meta_leads": 0, "cap": "", "impressions": 799, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120243095062770384", "campaign_name": "31 Snapchat Charlie CBO", "account": "31_ballet", "account_name": "1", "token_name": "31_ballet", "status": "PAUSED", "currency": "USD", "budget_native": 350.0, "budget_usd": 350.0, "tort": "Suco", "target_cpl": null, "breakeven": null, "windows": {"yesterday": {"spend_usd": 66.89, "spend_native": 66.89, "leads": 1, "meta_leads": 1, "lp_leads": null, "cpl": 66.89, "impressions": 963}, "last_3d": {"spend_usd": 744.1, "spend_native": 744.1, "leads": 19, "meta_leads": 19, "lp_leads": null, "cpl": 39.16, "impressions": 11038}, "last_7d": {"spend_usd": 1504.66, "spend_native": 1504.66, "leads": 28, "meta_leads": 28, "lp_leads": null, "cpl": 53.74, "impressions": 22283}}, "budget": 350.0, "spend": 1504.66, "leads": 28, "meta_leads": 28, "cap": "", "impressions": 22283, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120243236375230384", "campaign_name": "31 Snapchat Jor CBO", "account": "31_ballet", "account_name": "1", "token_name": "31_ballet", "status": "PAUSED", "currency": "USD", "budget_native": 200.0, "budget_usd": 200.0, "tort": "Suco", "target_cpl": null, "breakeven": null, "windows": {"yesterday": {"spend_usd": 0, "spend_native": 0, "leads": 0, "meta_leads": 0, "lp_leads": null, "cpl": null, "impressions": 0}, "last_3d": {"spend_usd": 364.91, "spend_native": 364.91, "leads": 2, "meta_leads": 2, "lp_leads": null, "cpl": 182.46, "impressions": 3331}, "last_7d": {"spend_usd": 942.59, "spend_native": 942.59, "leads": 6, "meta_leads": 6, "lp_leads": null, "cpl": 157.1, "impressions": 9522}}, "budget": 200.0, "spend": 942.59, "leads": 6, "meta_leads": 6, "cap": "", "impressions": 9522, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120242402876620751", "campaign_name": "Blueberry Talcum CBO H&P", "account": "16_blueberry", "account_name": "BLUEBERRY $ for (whitesroofingcompany.com) 51", "token_name": "16_blueberry", "status": "ACTIVE", "currency": "USD", "budget_native": 200.0, "budget_usd": 200.0, "tort": "Talcum", "target_cpl": 200, "breakeven": 270, "windows": {"yesterday": {"spend_usd": 307.51, "spend_native": 307.51, "leads": 0, "meta_leads": 0, "lp_leads": 0, "cpl": null, "impressions": 4865}, "last_3d": {"spend_usd": 1266.22, "spend_native": 1266.22, "leads": -1, "meta_leads": 3, "lp_leads": -1, "cpl": null, "impressions": 17470}, "last_7d": {"spend_usd": 4646.75, "spend_native": 4646.75, "leads": 3, "meta_leads": 11, "lp_leads": 3, "cpl": 1548.92, "impressions": 64955}}, "budget": 200.0, "spend": 4646.75, "leads": 3, "meta_leads": 11, "cap": "", "impressions": 64955, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}, {"campaign_id": "120245023773420751", "campaign_name": "Talcum Jordan CBO H&P", "account": "16_blueberry", "account_name": "BLUEBERRY $ for (whitesroofingcompany.com) 51", "token_name": "16_blueberry", "status": "PAUSED", "currency": "USD", "budget_native": 200.0, "budget_usd": 200.0, "tort": "Talcum", "target_cpl": 200, "breakeven": 270, "windows": {"yesterday": {"spend_usd": 0, "spend_native": 0, "leads": 0, "meta_leads": 0, "lp_leads": 0, "cpl": null, "impressions": 0}, "last_3d": {"spend_usd": 0, "spend_native": 0, "leads": 0, "meta_leads": 0, "lp_leads": 0, "cpl": null, "impressions": 0}, "last_7d": {"spend_usd": 286.81, "spend_native": 286.81, "leads": 0, "meta_leads": 0, "lp_leads": 0, "cpl": null, "impressions": 2984}}, "budget": 200.0, "spend": 286.81, "leads": 0, "meta_leads": 0, "cap": "", "impressions": 2984, "link_clicks": 0, "landing_page_views": 0, "video_3sec_views": 0, "video_50pct_views": 0, "revenue": "", "notes": ""}]};
+
+// Auto-load sample data on page load
+(function() {
+    function autoLoad() {
+        if (typeof campaigns === 'undefined' || typeof reRender !== 'function') {
+            setTimeout(autoLoad, 200);
+            return;
+        }
+        if (campaigns.length > 0) return;
+        campaigns.length = 0;
+        _FULL_API_DATA.campaigns.forEach(function(c) { campaigns.push(c); });
+        if (_FULL_API_DATA.target_cpls) {
+            Object.entries(_FULL_API_DATA.target_cpls).forEach(function([k,v]) {
+                if (v.target != null) TARGET_CPLS[k] = v;
+            });
+        }
+        reRender();
+    }
+    if (document.readyState === 'complete') autoLoad();
+    else window.addEventListener('load', autoLoad);
+})();
+</script>
+</body>
+</html>
