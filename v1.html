@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meta Ads Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ===== CSS Design Tokens (exact from Dashboard.tsx :root) ===== */
+:root {
+  --background: oklch(99% 0 0);
+  --foreground: oklch(15% .01 240);
+  --card: oklch(99% 0 0);
+  --card-foreground: oklch(15% .01 240);
+  --primary: oklch(35% .18 250);
+  --primary-foreground: oklch(99% 0 0);
+  --secondary: oklch(97% .001 240);
+  --secondary-foreground: oklch(25% .01 240);
+  --muted: oklch(97% .001 240);
+  --muted-foreground: oklch(55% .01 240);
+  --accent: oklch(97% .001 240);
+  --accent-foreground: oklch(25% .01 240);
+  --destructive: oklch(55% .22 25);
+  --border: oklch(90% .005 240);
+  --input: oklch(90% .005 240);
+  --ring: oklch(35% .18 250);
+  --radius: .5rem;
+}
+html.dark {
+  --background: oklch(14.1% .005 285.823);
+  --foreground: oklch(85% .005 65);
+  --card: oklch(21% .006 285.885);
+  --card-foreground: oklch(85% .005 65);
+  --primary: oklch(55% .18 250);
+  --primary-foreground: oklch(99% 0 0);
+  --secondary: oklch(24% .006 286.033);
+  --secondary-foreground: oklch(85% .005 65);
+  --muted: oklch(21% .006 285.885);
+  --muted-foreground: oklch(60% .01 286);
+  --accent: oklch(24% .006 286.033);
+  --accent-foreground: oklch(85% .005 65);
+  --border: oklch(27% .005 286);
+  --input: oklch(27% .005 286);
+  --ring: oklch(55% .18 250);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { height:6px; width:6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius:3px; }
+
+/* ===== 1. Accounts Bar ===== */
+.accounts-bar {
+  display:flex; gap:8px; padding:10px 20px;
+  overflow-x:auto; white-space:nowrap;
+  background: var(--card); border-bottom:1px solid var(--border);
+}
+.accounts-bar::-webkit-scrollbar { height:4px; }
+/* Account pill — rotating colors from source */
+.acct-bar-pill {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:4px 12px; border-radius:9999px;
+  font-size:12px; font-weight:500;
+  border:1px solid; flex-shrink:0;
+  transition: all .15s; cursor:default;
+}
+.acct-bar-pill .acct-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.acct-dot-active { background:#10b981; }
+.acct-dot-restricted { background:#ef4444; }
+.acct-dot-disabled { background:#9ca3af; }
+
+/* Account pill color variants (from source: blue, violet, orange, emerald, rose, amber, cyan, slate) */
+.apill-blue { background:rgba(59,130,246,.08); color:#2563eb; border-color:rgba(59,130,246,.2); }
+.apill-violet { background:rgba(139,92,246,.08); color:#7c3aed; border-color:rgba(139,92,246,.2); }
+.apill-orange { background:rgba(249,115,22,.08); color:#ea580c; border-color:rgba(249,115,22,.2); }
+.apill-emerald { background:rgba(16,185,129,.08); color:#059669; border-color:rgba(16,185,129,.2); }
+.apill-rose { background:rgba(244,63,94,.08); color:#e11d48; border-color:rgba(244,63,94,.2); }
+.apill-amber { background:rgba(245,158,11,.08); color:#d97706; border-color:rgba(245,158,11,.2); }
+.apill-cyan { background:rgba(6,182,212,.08); color:#0891b2; border-color:rgba(6,182,212,.2); }
+.apill-slate { background:rgba(100,116,139,.08); color:#475569; border-color:rgba(100,116,139,.2); }
+html.dark .apill-blue { background:rgba(59,130,246,.12); color:#93c5fd; }
+html.dark .apill-violet { background:rgba(139,92,246,.12); color:#c4b5fd; }
+html.dark .apill-orange { background:rgba(249,115,22,.12); color:#fdba74; }
+html.dark .apill-emerald { background:rgba(16,185,129,.12); color:#6ee7b7; }
+html.dark .apill-rose { background:rgba(244,63,94,.12); color:#fda4af; }
+html.dark .apill-amber { background:rgba(245,158,11,.12); color:#fcd34d; }
+html.dark .apill-cyan { background:rgba(6,182,212,.12); color:#67e8f9; }
+html.dark .apill-slate { background:rgba(100,116,139,.12); color:#cbd5e1; }
+
+/* ===== 2. Nav Bar ===== */
+.navbar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 20px; background:var(--card);
+  border-bottom:1px solid var(--border);
+  position:sticky; top:0; z-index:100;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  gap: 12px;
+}
+.nav-left { display:flex; align-items:center; gap:10px; }
+.nav-logo {
+  width:32px; height:32px; border-radius:8px;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-weight:800; font-size:14px;
+}
+.nav-title { font-size:16px; font-weight:700; letter-spacing:-.01em; }
+.nav-center { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.nav-item {
+  padding:5px 12px; border-radius:var(--radius);
+  font-size:12px; font-weight:500; cursor:pointer;
+  color: var(--muted-foreground); transition:all .15s;
+  border:none; background:none; font-family:inherit;
+}
+.nav-item:hover { background:var(--accent); color:var(--foreground); }
+.nav-item.active { background:var(--secondary); color:var(--foreground); font-weight:600; }
+.nav-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.nav-timestamp { font-size:11px; color:var(--muted-foreground); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.nav-timer {
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:2px 8px; border-radius:9999px; font-size:10px; font-weight:600;
+  background:var(--secondary); color:var(--muted-foreground);
+  font-variant-numeric:tabular-nums;
+}
+
+/* Dark mode toggle — moon icon style */
+.dark-toggle-btn {
+  width:36px; height:36px; border-radius:var(--radius);
+  border:1px solid var(--border); background:var(--card);
+  color:var(--muted-foreground); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition: all .15s; font-family:inherit;
+}
+.dark-toggle-btn:hover { background:var(--accent); color:var(--foreground); }
+.dark-toggle-btn svg { width:16px; height:16px; }
+
+/* Buttons */
+.btn {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:7px 14px; border-radius:var(--radius);
+  border:1px solid var(--border); background:var(--card);
+  color:var(--foreground); font-size:13px; font-weight:500;
+  cursor:pointer; transition:all .15s; font-family:inherit;
+  white-space:nowrap;
+}
+.btn:hover { background:var(--accent); }
+.btn-primary { background:var(--primary); color:var(--primary-foreground); border-color:var(--primary); }
+.btn-primary:hover { opacity:.9; }
+.btn-sm { padding:5px 10px; font-size:12px; }
+.btn-ghost { border:none; background:none; }
+.btn-ghost:hover { background:var(--accent); }
+
+/* ===== 3. Revenue Summary Card ===== */
+.revenue-card {
+  margin:16px 20px; padding:20px 24px;
+  background:var(--card); border-radius:var(--radius);
+  border:1px solid var(--border);
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+}
+.rev-header { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; }
+.rev-month-label {
+  font-size:11px; font-weight:600; text-transform:uppercase;
+  letter-spacing:.08em; color:var(--muted-foreground);
+}
+.rev-amount { font-size:36px; font-weight:800; letter-spacing:-.02em; margin:2px 0 4px; }
+.rev-goal-text { font-size:12px; color:var(--muted-foreground); }
+.rev-right-stats { text-align:right; display:flex; flex-direction:column; gap:8px; }
+.rev-projected-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:4px 12px; border-radius:9999px;
+  font-size:12px; font-weight:600;
+  background:rgba(244,63,94,.1); color:#e11d48; border:1px solid rgba(244,63,94,.2);
+}
+html.dark .rev-projected-badge { color:#fda4af; background:rgba(244,63,94,.15); }
+.progress-bar-wrap { height:6px; background:var(--secondary); border-radius:3px; margin:16px 0 12px; overflow:hidden; }
+.progress-bar-fill { height:100%; border-radius:3px; background:linear-gradient(90deg, #3b82f6, #6366f1); transition:width .6s ease; }
+.rev-stats-row { display:flex; gap:24px; flex-wrap:wrap; margin-top:8px; }
+.rev-stat-item { }
+.rev-stat-label { font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:.05em; color:var(--muted-foreground); }
+.rev-stat-value { font-size:18px; font-weight:700; font-variant-numeric:tabular-nums; }
+.tort-breakdown { display:flex; gap:6px; flex-wrap:wrap; margin-top:14px; }
+.tort-chip {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:3px 10px; border-radius:9999px;
+  font-size:11px; font-weight:500;
+  border:1px solid var(--border);
+}
+.tort-chip-pos { background:rgba(16,185,129,.06); color:#059669; border-color:rgba(16,185,129,.2); }
+.tort-chip-neg { background:rgba(239,68,68,.06); color:#dc2626; border-color:rgba(239,68,68,.2); }
+html.dark .tort-chip-pos { color:#6ee7b7; }
+html.dark .tort-chip-neg { color:#fca5a5; }
+
+/* ===== 4. Account Spend Bars ===== */
+.spend-bars-section {
+  margin:0 20px 12px; display:flex; gap:12px; flex-wrap:wrap;
+}
+.spend-bar-card {
+  flex:1; min-width:220px; padding:12px 16px;
+  background:var(--card); border-radius:var(--radius);
+  border:1px solid var(--border);
+}
+.spend-bar-title { font-size:11px; font-weight:600; color:var(--muted-foreground); margin-bottom:4px; }
+.spend-bar-values { display:flex; justify-content:space-between; font-size:12px; font-weight:600; margin-bottom:4px; }
+.spend-bar-track { height:6px; background:var(--secondary); border-radius:3px; overflow:hidden; }
+.spend-bar-fill { height:100%; border-radius:3px; transition:width .4s; }
+
+/* ===== 5. Filter Bar ===== */
+.filter-bar {
+  display:flex; align-items:center; gap:10px; padding:10px 20px;
+  flex-wrap:wrap; border-bottom:1px solid var(--border);
+  background:var(--card);
+}
+.filter-bar input[type="text"],
+.filter-bar input[type="date"],
+.filter-bar select {
+  height:34px; padding:5px 10px; border:1px solid var(--border);
+  border-radius:var(--radius); background:var(--background);
+  color:var(--foreground); font-size:13px; font-family:inherit;
+}
+.filter-bar input:focus, .filter-bar select:focus {
+  outline:none; border-color:var(--ring);
+  box-shadow:0 0 0 2px rgba(59,130,246,.12);
+}
+.filter-search { min-width:200px; }
+.view-toggle-group {
+  display:inline-flex; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;
+}
+.view-toggle-btn {
+  padding:5px 12px; font-size:12px; font-weight:500; cursor:pointer;
+  border:none; background:var(--card); color:var(--muted-foreground);
+  font-family:inherit; transition:all .15s;
+  border-right:1px solid var(--border);
+}
+.view-toggle-btn:last-child { border-right:none; }
+.view-toggle-btn.active { background:var(--primary); color:var(--primary-foreground); }
+.view-toggle-btn:hover:not(.active) { background:var(--accent); }
+.active-only-toggle {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:12px; color:var(--muted-foreground); cursor:pointer;
+}
+.active-only-toggle input { accent-color: #3b82f6; }
+.filter-stats { font-size:12px; color:var(--muted-foreground); margin-left:auto; font-variant-numeric:tabular-nums; }
+.filter-stats strong { color:var(--foreground); }
+
+/* ===== 6. Main Table ===== */
+.table-wrap {
+  margin:0 20px 20px; border-radius:var(--radius);
+  border:1px solid var(--border); overflow:hidden;
+  background:var(--card);
+}
+.table-scroll { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; min-width:1800px; }
+thead { position:sticky; top:0; z-index:10; }
+
+/* Header classes (exact from source) */
+th {
+  /* table-cell px-2 sm:px-4 py-2 text-xs font-semibold uppercase tracking-wider whitespace-nowrap */
+  padding:8px 12px;
+  font-size:11px; font-weight:600; text-transform:uppercase;
+  letter-spacing:.05em; white-space:nowrap;
+  text-align:right;
+  background:var(--muted);
+  color:var(--muted-foreground);
+  border-bottom:1px solid var(--border);
+  cursor:pointer; user-select:none;
+  position:relative;
+}
+th:first-child { text-align:left; }
+th:hover { color:var(--foreground); }
+th .sort-ico { font-size:9px; margin-left:3px; opacity:.4; }
+th.sorted .sort-ico { opacity:1; color:var(--primary); }
+/* Special header colors from source */
+th.hdr-hook { color:#a855f7; }
+th.hdr-hold { color:#a855f7; }
+th.hdr-cpqc { color:#0891b2; }
+th.hdr-target { color:#3b82f6; }
+
+td {
+  padding:10px 12px; white-space:nowrap;
+  border-bottom:1px solid var(--border);
+  font-size:13px; font-variant-numeric:tabular-nums;
+  vertical-align:middle; text-align:right;
+}
+td:first-child { text-align:left; }
+
+/* Row styling */
+tr.tort-row { background:var(--card); cursor:pointer; transition:background .1s; }
+tr.tort-row:hover { background:var(--accent); }
+tr.tort-row td { font-weight:600; font-size:13px; }
+
+tr.campaign-row { background:var(--background); transition:background .1s; }
+tr.campaign-row:hover { background:var(--accent); }
+tr.campaign-row td:first-child { padding-left:36px; border-left:3px solid #6366f1; }
+tr.campaign-row.hidden { display:none; }
+
+tr.adset-row { background:var(--background); }
+tr.adset-row td:first-child { padding-left:56px; border-left:3px solid #a78bfa; }
+tr.adset-row.hidden { display:none; }
+
+tr.ad-row { background:var(--background); }
+tr.ad-row td:first-child { padding-left:76px; border-left:3px solid #c4b5fd; }
+tr.ad-row.hidden { display:none; }
+
+/* Summary / Total row */
+tr.summary-row { background:var(--muted); }
+tr.summary-row td { font-weight:700; border-top:2px solid var(--border); }
+
+/* ===== Chevron (exact from source) ===== */
+.chev {
+  display:inline-flex; align-items:center; justify-content:center;
+  cursor:pointer; margin-right:6px; flex-shrink:0;
+  transition: transform .2s ease;
+}
+/* w-3.5 h-3.5 text-rose-800 dark:text-rose-300 transition-transform */
+.chev svg { width:14px; height:14px; color:#9f1239; transition:transform .2s; }
+html.dark .chev svg { color:#fda4af; }
+.chev.expanded svg { transform:rotate(90deg); }
+
+/* ===== Status Dots (exact from source) ===== */
+.status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.sd-active { background:#10b981; } /* bg-emerald-500 */
+.sd-paused { background:#a1a1aa; } /* bg-zinc-400 */
+.sd-restricted { background:#ef4444; } /* bg-red-500 */
+
+/* ===== CPL Badge Component (exact from source) ===== */
+/* inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-medium */
+.cpl-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:2px 8px; border-radius:9999px;
+  border:1px solid; font-size:10px; font-weight:500;
+  font-variant-numeric:tabular-nums;
+}
+/* Good: bg-emerald-500/10 text-emerald-700 border-emerald-500/20 */
+.cpl-good { background:rgba(16,185,129,.1); color:#047857; border-color:rgba(16,185,129,.2); }
+html.dark .cpl-good { color:#6ee7b7; }
+/* Warning: bg-amber-500/10 text-amber-600 border-amber-500/20 */
+.cpl-warn { background:rgba(245,158,11,.1); color:#d97706; border-color:rgba(245,158,11,.2); }
+html.dark .cpl-warn { color:#fbbf24; }
+/* Bad: bg-red-500/10 text-red-700 border-red-500/20 */
+.cpl-bad { background:rgba(239,68,68,.1); color:#b91c1c; border-color:rgba(239,68,68,.2); }
+html.dark .cpl-bad { color:#fca5a5; }
+/* Status dot inside badge: w-1.5 h-1.5 rounded-full shrink-0 */
+.cpl-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.cpl-dot-good { background:#10b981; }
+.cpl-dot-warn { background:#f59e0b; }
+.cpl-dot-bad { background:#ef4444; }
+
+/* ===== CPL Color (font-mono) ===== */
+.cpl-text { font-family:'Inter',monospace; font-weight:600; }
+.cpl-emerald { color:#059669; }
+.cpl-amber { color:#d97706; }
+.cpl-red { color:#dc2626; }
+.cpl-zinc { color:#3f3f46; }
+html.dark .cpl-emerald { color:#6ee7b7; }
+html.dark .cpl-amber { color:#fbbf24; }
+html.dark .cpl-red { color:#fca5a5; }
+html.dark .cpl-zinc { color:#a1a1aa; }
+
+/* ===== Margin (from source) ===== */
+.margin-pos { color:#059669; font-weight:600; }
+.margin-neg { color:#dc2626; font-weight:600; }
+html.dark .margin-pos { color:#6ee7b7; }
+html.dark .margin-neg { color:#fca5a5; }
+
+/* ===== Hook % / Hold % colors (from source) ===== */
+.hook-good { color:#059669; } /* text-emerald-600 */
+.hook-mid { color:#f59e0b; } /* text-amber-500 */
+.hook-bad { color:#ef4444; } /* text-red-500 */
+html.dark .hook-good { color:#6ee7b7; }
+html.dark .hook-mid { color:#fbbf24; }
+html.dark .hook-bad { color:#fca5a5; }
+
+/* ===== CPQC (always cyan) ===== */
+.cpqc-val { font-weight:600; color:#0891b2; }
+html.dark .cpqc-val { color:#67e8f9; }
+
+/* ===== Account pills in table ===== */
+.tbl-acct-pill {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:2px 8px; border-radius:9999px;
+  font-size:10px; font-weight:600; border:1px solid;
+}
+
+/* ===== Tort name ===== */
+.tort-name { font-weight:700; font-size:13px; }
+.tort-count {
+  display:inline-flex; align-items:center;
+  padding:1px 6px; border-radius:9999px;
+  font-size:10px; font-weight:600;
+  background:rgba(16,185,129,.1); color:#059669;
+  margin-left:6px;
+}
+html.dark .tort-count { color:#6ee7b7; }
+
+/* Profit colors */
+.profit-pos { color:#059669; font-weight:600; }
+.profit-neg { color:#dc2626; font-weight:600; }
+html.dark .profit-pos { color:#6ee7b7; }
+html.dark .profit-neg { color:#fca5a5; }
+
+/* ===== Modal ===== */
+.modal-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.5); z-index:200;
+  align-items:center; justify-content:center;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.active { display:flex; }
+.modal {
+  background:var(--card); border-radius:calc(var(--radius)*1.5);
+  box-shadow:0 20px 60px rgba(0,0,0,.2); padding:24px;
+  max-width:680px; width:92%; max-height:85vh; overflow-y:auto;
+  border:1px solid var(--border);
+}
+.modal h3 { font-size:18px; font-weight:700; margin-bottom:4px; }
+.modal-subtitle { font-size:13px; color:var(--muted-foreground); margin-bottom:16px; }
+.modal textarea {
+  width:100%; min-height:180px; padding:12px;
+  border:1px solid var(--border); border-radius:var(--radius);
+  font-family:'Inter',monospace; font-size:12px;
+  background:var(--background); color:var(--foreground); resize:vertical;
+}
+.modal textarea:focus { outline:none; border-color:var(--ring); box-shadow:0 0 0 2px rgba(59,130,246,.12); }
+.modal-actions { display:flex; gap:8px; margin-top:16px; justify-content:flex-end; }
+.modal-hint { font-size:11px; color:var(--muted-foreground); margin-top:8px; line-height:1.6; }
+
+/* File drop zone */
+.file-drop {
+  border:2px dashed var(--border); border-radius:var(--radius);
+  padding:20px; text-align:center; cursor:pointer;
+  margin-bottom:12px; transition:all .15s;
+  color:var(--muted-foreground); font-size:13px;
+}
+.file-drop:hover, .file-drop.dragover { border-color:var(--ring); background:rgba(59,130,246,.04); }
+.file-drop input { display:none; }
+
+/* NZD tooltip */
+.nzd-val { cursor:help; border-bottom:1px dashed var(--muted-foreground); position:relative; }
+
+/* Config bar */
+.config-bar {
+  display:flex; gap:16px; align-items:center;
+  padding:8px 20px; font-size:12px; color:var(--muted-foreground);
+  border-bottom:1px solid var(--border); background:var(--card);
+}
+.config-bar label { display:flex; align-items:center; gap:4px; font-weight:500; }
+.config-bar input[type="number"] {
+  width:70px; padding:3px 6px;
+  border:1px solid var(--border); border-radius:4px;
+  background:var(--background); color:var(--foreground); font-size:12px; font-family:inherit;
+}
+
+/* Empty state */
+.empty-state {
+  text-align:center; padding:60px 20px;
+  color:var(--muted-foreground);
+}
+.empty-icon { font-size:48px; margin-bottom:12px; opacity:.3; }
+
+/* Responsive */
+@media(max-width:768px) {
+  .navbar { flex-wrap:wrap; }
+  .nav-center { display:none; }
+  .revenue-card { margin:12px; }
+  .table-wrap { margin:0 12px 12px; }
+  .filter-bar { padding:8px 12px; }
+}
+
+/* Transition for dark mode */
+body, .navbar, .revenue-card, .table-wrap, .accounts-bar, .filter-bar, .config-bar {
+  transition: background .2s, color .2s, border-color .2s;
+}
+</style>
+</head>
+<body>
+
+<!-- 1. Accounts Bar -->
+<div class="accounts-bar" id="accountsBar">
+  <span style="font-size:12px;color:var(--muted-foreground);padding:4px 8px;">No accounts loaded</span>
+</div>
+
+<!-- 2. Nav Bar -->
+<nav class="navbar">
+  <div class="nav-left">
+    <div class="nav-logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+    </div>
+    <span class="nav-title">Meta Ads Monitor</span>
+    <span class="nav-timestamp" id="navTimestamp">Updated —</span>
+    <span class="nav-timer" id="navTimer">0s</span>
+  </div>
+  <div class="nav-center">
+    <button class="nav-item active">Monitoring</button>
+    <button class="nav-item">Daily Report</button>
+    <button class="nav-item">Timeline</button>
+    <button class="nav-item">AI Advisor</button>
+    <button class="nav-item">Settings</button>
+  </div>
+  <div class="nav-right">
+    <button class="btn btn-sm" onclick="openImportModal()" title="Import CSV/JSON data">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Import
+    </button>
+    <button class="btn btn-sm" onclick="exportCSV()" title="Export as CSV">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export
+    </button>
+    <button class="btn btn-sm btn-ghost" onclick="reRender()" title="Refresh">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    </button>
+    <!-- Moon icon toggle (from source) -->
+    <button class="dark-toggle-btn" onclick="toggleDark()" title="Toggle dark mode" id="darkBtn">
+      <svg id="moonIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg id="sunIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+  </div>
+</nav>
+
+<!-- 3. Revenue Summary Card -->
+<div class="revenue-card" id="revenueCard">
+  <div class="rev-header">
+    <div>
+      <div class="rev-month-label" id="revMonthLabel">MAY REVENUE</div>
+      <div class="rev-amount" id="revAmount">$0</div>
+      <div class="rev-goal-text" id="revGoalText">Goal: $100,000 · 0% achieved</div>
+    </div>
+    <div class="rev-right-stats">
+      <div class="rev-projected-badge" id="revProjectedBadge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Projected: $0
+      </div>
+      <div style="font-size:12px;color:var(--muted-foreground)">Total Spend: <strong id="revTotalSpend">$0</strong></div>
+    </div>
+  </div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="revBar" style="width:0%"></div></div>
+  <div class="rev-stats-row" id="revStatsRow"></div>
+  <div class="tort-breakdown" id="tortBreakdown"></div>
+</div>
+
+<!-- 4. Account Spend Bars -->
+<div class="spend-bars-section" id="spendBarsSection"></div>
+
+<!-- Config bar -->
+<div class="config-bar">
+  <label>NZD→USD: <input type="number" id="nzdRate" value="0.586" step="0.001" min="0" max="2" onchange="reRender()"></label>
+  <label>Revenue Goal: $<input type="number" id="revGoalInput" value="100000" step="1000" min="0" onchange="reRender()"></label>
+</div>
+
+<!-- 5. Filter Bar -->
+<div class="filter-bar">
+  <input type="text" id="searchInput" class="filter-search" placeholder="🔍 Search campaigns..." oninput="reRender()">
+  <input type="date" id="dateFrom">
+  <input type="date" id="dateTo">
+  <div class="view-toggle-group">
+    <button class="view-toggle-btn active" data-view="offers" onclick="setView(this,'offers')">Offers</button>
+    <button class="view-toggle-btn" data-view="accounts" onclick="setView(this,'accounts')">Accounts</button>
+    <button class="view-toggle-btn" data-view="combined" onclick="setView(this,'combined')">Combined</button>
+  </div>
+  <div class="view-toggle-group">
+    <button class="view-toggle-btn active" data-platform="meta" onclick="setPlatform(this,'meta')">Meta</button>
+    <button class="view-toggle-btn" data-platform="youtube" onclick="setPlatform(this,'youtube')">YouTube</button>
+  </div>
+  <label class="active-only-toggle">
+    <input type="checkbox" id="activeOnly" onchange="reRender()"> Active only
+  </label>
+  <select id="statusFilter" onchange="reRender()">
+    <option value="all">All Statuses</option>
+    <option value="active">Active</option>
+    <option value="paused">Paused</option>
+    <option value="restricted">Restricted</option>
+  </select>
+  <div class="filter-stats" id="filterStats"><strong>0</strong> groups · <strong>0</strong> campaigns · <strong>0</strong> active</div>
+</div>
+
+<!-- 6. Main Table -->
+<div class="table-wrap">
+  <div class="table-scroll">
+    <table id="mainTable">
+      <thead><tr id="tableHead"></tr></thead>
+      <tbody id="tableBody"></tbody>
+      <tfoot id="tableFoot"></tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="importModal" onclick="if(event.target===this)closeImportModal()">
+  <div class="modal">
+    <h3>Import Data</h3>
+    <p class="modal-subtitle">Upload a CSV file, paste CSV data, or paste JSON output from media_buy_report.py</p>
+    
+    <div class="file-drop" id="fileDrop" onclick="document.getElementById('fileInput').click()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div>Drop CSV file here or click to browse</div>
+      <input type="file" id="fileInput" accept=".csv,.json,.txt" onchange="handleFileUpload(event)">
+    </div>
+
+    <textarea id="importData" placeholder="Or paste CSV / JSON data here..."></textarea>
+    
+    <div class="modal-hint">
+      <strong>CSV columns:</strong> campaign_name, account, status, budget, spend, leads, cap, cpl, impressions, link_clicks, landing_page_views, video_3sec_views, video_50pct_views, revenue, notes
+    </div>
+    <div style="margin-top:8px">
+      <label class="active-only-toggle">
+        <input type="checkbox" id="isNZD"> Data is in NZD (will convert at current rate)
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="loadSampleData()">Load Sample Data</button>
+      <button class="btn" onclick="closeImportModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="importData()">Import</button>
+    </div>
+  </div>
+</div>
+
+<div style="height:40px"></div>
+
+<script>
+// ==================== STATE ====================
+let campaigns = [];
+let expandedTorts = new Set();
+let sortCol = null;
+let sortDir = 'asc';
+let currentView = 'offers';
+let currentPlatform = 'meta';
+let timerSeconds = 0;
+let timerInterval = null;
+
+const ACCT_COLORS = ['blue','violet','orange','emerald','rose','amber','cyan','slate'];
+let acctColorMap = {};
+let acctColorIdx = 0;
+
+// Target CPLs (pre-configured from source)
+const TARGET_CPLS = {
+  'Depo LCA':      { be: 200,   target: 140 },
+  'Depo Pulaski':  { be: 200,   target: 140 },
+  'Hernia Mesh':   { be: 81,    target: 56.70 },
+  'ILM EST':       { be: 405,   target: 325 },
+  'ILM NZT':       { be: 405,   target: 325 },
+  'ILM':           { be: 405,   target: 325 },
+  'PowerPort':     { be: 180,   target: 126 },
+  'Roblox':        { be: 140,   target: 120 },
+  'SMA':           { be: 55.25, target: 38.68 },
+  'Suco':          { be: 25,    target: 17.50 },
+  'Talcum':        { be: 270,   target: 200 },
+  'Other':         { be: 100,   target: 70 },
+};
+
+// NZD accounts
+const NZD_ACCOUNTS = ['barbara_44448', 'aeml 44448', 'aeml 49761'];
+function isNZDAccount(acct) {
+  if(!acct) return false;
+  const a = acct.toLowerCase();
+  return NZD_ACCOUNTS.some(n => a.includes(n.toLowerCase()));
+}
+
+// All 17 columns (exact column order from source)
+const COLUMNS = [
+  { key:'name',      label:'Offer / Campaign', align:'left',   sortable:true,  cls:'' },
+  { key:'account',   label:'Account',          align:'left',   sortable:true,  cls:'' },
+  { key:'status',    label:'Status',           align:'center', sortable:true,  cls:'' },
+  { key:'budget',    label:'Budget',           align:'right',  sortable:true,  cls:'' },
+  { key:'spend',     label:'Spend',            align:'right',  sortable:true,  cls:'' },
+  { key:'leads',     label:'Leads',            align:'right',  sortable:true,  cls:'' },
+  { key:'cap',       label:'Cap',              align:'right',  sortable:true,  cls:'' },
+  { key:'cpl',       label:'CPL',              align:'right',  sortable:true,  cls:'' },
+  { key:'be',        label:'B/E',              align:'right',  sortable:false, cls:'' },
+  { key:'targetCpl', label:'Target CPL★',      align:'right',  sortable:false, cls:'hdr-target' },
+  { key:'margin',    label:'Margin',           align:'right',  sortable:true,  cls:'' },
+  { key:'revenue',   label:'Revenue',          align:'right',  sortable:true,  cls:'' },
+  { key:'profit',    label:'Profit',           align:'right',  sortable:true,  cls:'' },
+  { key:'hook',      label:'Hook %',           align:'right',  sortable:true,  cls:'hdr-hook' },
+  { key:'hold',      label:'Hold %',           align:'right',  sortable:true,  cls:'hdr-hold' },
+  { key:'cpqc',      label:'CPQC',             align:'right',  sortable:true,  cls:'hdr-cpqc' },
+  { key:'notes',     label:'Notes',            align:'left',   sortable:false, cls:'' },
+];
+
+// ==================== UTILITIES ====================
+function $(id) { return document.getElementById(id); }
+function fmt(n, d=0) {
+  if(n == null || isNaN(n)) return '—';
+  return '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+}
+function fmtN(n) {
+  if(n == null || isNaN(n)) return '—';
+  return Number(n).toLocaleString('en-US');
+}
+function fmtPct(n) {
+  if(n == null || isNaN(n)) return '—';
+  return n.toFixed(1) + '%';
+}
+function parseNum(v) {
+  if(v == null || v === '') return null;
+  let n = parseFloat(String(v).replace(/[$,]/g, ''));
+  return isNaN(n) ? null : n;
+}
+function getAcctColor(name) {
+  if(!name) return 'blue';
+  if(!acctColorMap[name]) { acctColorMap[name] = ACCT_COLORS[acctColorIdx % ACCT_COLORS.length]; acctColorIdx++; }
+  return acctColorMap[name];
+}
+
+function classifyTort(name) {
+  if(!name) return 'Other';
+  const n = name.toUpperCase();
+  if(n.includes('HERNIA') || n.includes(' HM ') || n.startsWith('HM ') || n.includes('HM_')) return 'Hernia Mesh';
+  if(n.includes('ILM') || n.includes('JDC')) {
+    if(n.includes('NZT') || n.includes('NZ')) return 'ILM NZT';
+    if(n.includes('EST')) return 'ILM EST';
+    return 'ILM';
+  }
+  if(n.includes('DEPO')) {
+    if(n.includes('PULASKI')) return 'Depo Pulaski';
+    if(n.includes('LCA')) return 'Depo LCA';
+    return 'Depo Pulaski';
+  }
+  if(n.includes('TALCUM') || n.includes('TALC')) return 'Talcum';
+  if(n.includes('SUCO') || n.includes('SNAPCHAT')) return 'Suco';
+  if(n.includes('SMA')) return 'SMA';
+  if(n.includes('POWERPORT') || n.includes('POWER PORT')) return 'PowerPort';
+  if(n.includes('ROBLOX')) return 'Roblox';
+  return 'Other';
+}
+
+function calcMetrics(c) {
+  c.tort = classifyTort(c.campaign_name);
+  const t = TARGET_CPLS[c.tort] || TARGET_CPLS['Other'];
+  c.be = t.be;
+  c.targetCpl = t.target;
+  const spend = parseNum(c.spend) || 0;
+  const leads = parseNum(c.leads) || 0;
+  const rev   = parseNum(c.revenue) || 0;
+  const impr  = parseNum(c.impressions) || 0;
+  const v3    = parseNum(c.video_3sec_views) || 0;
+  const v50   = parseNum(c.video_50pct_views) || 0;
+  const lc    = parseNum(c.link_clicks) || 0;
+  const lpv   = parseNum(c.landing_page_views) || 0;
+  c._spend = spend;
+  c._leads = leads;
+  c._revenue = rev;
+  c._cpl = leads > 0 ? spend / leads : null;
+  c._margin = rev > 0 ? ((rev - spend) / rev * 100) : null;
+  c._profit = rev - spend;
+  // Hook % = today3sec / todayImpressions * 100
+  c._hook = impr > 0 ? (v3 / impr * 100) : null;
+  // Hold % = todayThruplay / today3sec * 100 (using v50 as thruplay proxy)
+  c._hold = v3 > 0 ? (v50 / v3 * 100) : null;
+  // CPQC = todaySpend / todayLpv
+  c._cpqc = lpv > 0 ? spend / lpv : null;
+  c._budget = parseNum(c.budget);
+  c._cap = parseNum(c.cap);
+  c._impr = impr;
+  c._lc = lc;
+  c._lpv = lpv;
+  c._v3 = v3;
+  c._v50 = v50;
+}
+
+// ==================== CPL COLOR FUNCTION (exact from source Ir) ====================
+function getCplColor(cpl, breakEven, targetCpl) {
+  if(cpl === null) return { cls:'cpl-zinc', text:'—' };
+  let cls = 'cpl-zinc';
+  if(breakEven) {
+    const target = targetCpl ?? breakEven * 0.7;
+    if(cpl <= target) cls = 'cpl-emerald';
+    else if(cpl <= breakEven) cls = 'cpl-amber';
+    else cls = 'cpl-red';
+  } else {
+    if(cpl < 50) cls = 'cpl-emerald';
+    else if(cpl < 150) cls = 'cpl-amber';
+    else cls = 'cpl-red';
+  }
+  return { cls, text: fmt(cpl, 2) };
+}
+
+// CPL Badge with status dot (exact from source)
+function cplBadgeHTML(cpl, be, target) {
+  if(cpl == null) return '<span style="color:var(--muted-foreground)">—</span>';
+  let badgeCls, dotCls;
+  if(be) {
+    const tgt = target ?? be * 0.7;
+    if(cpl <= tgt) { badgeCls = 'cpl-good'; dotCls = 'cpl-dot-good'; }
+    else if(cpl <= be) { badgeCls = 'cpl-warn'; dotCls = 'cpl-dot-warn'; }
+    else { badgeCls = 'cpl-bad'; dotCls = 'cpl-dot-bad'; }
+  } else {
+    if(cpl < 50) { badgeCls = 'cpl-good'; dotCls = 'cpl-dot-good'; }
+    else if(cpl < 150) { badgeCls = 'cpl-warn'; dotCls = 'cpl-dot-warn'; }
+    else { badgeCls = 'cpl-bad'; dotCls = 'cpl-dot-bad'; }
+  }
+  return `<span class="cpl-badge ${badgeCls}"><span class="cpl-dot ${dotCls}"></span>${fmt(cpl,2)}</span>`;
+}
+
+// CPL inline text (font-mono style from source)
+function cplTextHTML(cpl, be, target) {
+  const { cls, text } = getCplColor(cpl, be, target);
+  return `<span class="cpl-text ${cls}">${text}</span>`;
+}
+
+// Margin (exact from source cA)
+function marginHTML(margin) {
+  if(margin == null || isNaN(margin)) return '<span style="color:var(--muted-foreground)">—</span>';
+  const positive = margin >= 0;
+  const sign = positive ? '+' : '';
+  return `<span class="${positive ? 'margin-pos' : 'margin-neg'}">${sign}${margin.toFixed(1)}%</span>`;
+}
+
+// Hook % (exact from source)
+function hookHTML(hook) {
+  if(hook == null) return '<span style="color:var(--muted-foreground)">—</span>';
+  const cls = hook >= 30 ? 'hook-good' : hook >= 20 ? 'hook-mid' : 'hook-bad';
+  return `<span class="${cls}" style="font-weight:600">${hook.toFixed(1)}%</span>`;
+}
+
+// Hold % (exact from source)
+function holdHTML(hold) {
+  if(hold == null) return '<span style="color:var(--muted-foreground)">—</span>';
+  const cls = hold >= 50 ? 'hook-good' : hold >= 30 ? 'hook-mid' : 'hook-bad';
+  return `<span class="${cls}" style="font-weight:600">${hold.toFixed(1)}%</span>`;
+}
+
+// CPQC (always cyan from source)
+function cpqcHTML(cpqc) {
+  if(cpqc == null) return '<span style="color:var(--muted-foreground)">—</span>';
+  return `<span class="cpqc-val">${fmt(cpqc,2)}</span>`;
+}
+
+// Status dot
+function statusDotHTML(status) {
+  const s = (status || '').toLowerCase();
+  if(s === 'active') return '<span class="status-dot sd-active"></span>';
+  if(s.includes('restrict')) return '<span class="status-dot sd-restricted"></span>';
+  return '<span class="status-dot sd-paused"></span>';
+}
+
+// Account pill
+function acctPillHTML(name) {
+  if(!name) return '<span style="color:var(--muted-foreground);font-size:11px">—</span>';
+  const c = getAcctColor(name);
+  return `<span class="tbl-acct-pill apill-${c}">${name}</span>`;
+}
+
+// ==================== DARK MODE ====================
+function toggleDark() {
+  document.documentElement.classList.toggle('dark');
+  const isDark = document.documentElement.classList.contains('dark');
+  localStorage.setItem('meta_dash_v1_dark', isDark);
+  updateDarkIcon();
+}
+function updateDarkIcon() {
+  const isDark = document.documentElement.classList.contains('dark');
+  $('moonIcon').style.display = isDark ? 'none' : '';
+  $('sunIcon').style.display = isDark ? '' : 'none';
+}
+if(localStorage.getItem('meta_dash_v1_dark') === 'true') {
+  document.documentElement.classList.add('dark');
+}
+updateDarkIcon();
+
+// Timer
+function startTimer() {
+  timerSeconds = 0;
+  if(timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timerSeconds++;
+    $('navTimer').textContent = timerSeconds + 's';
+  }, 1000);
+}
+
+// ==================== CSV PARSING ====================
+function parseCSVLine(line) {
+  const result = []; let current = ''; let inQuotes = false;
+  for(let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if(inQuotes) {
+      if(c === '"' && line[i+1] === '"') { current += '"'; i++; }
+      else if(c === '"') inQuotes = false;
+      else current += c;
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === ',') { result.push(current.trim()); current = ''; }
+      else current += c;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if(lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z0-9_]/g, ''));
+  const rows = [];
+  for(let i = 1; i < lines.length; i++) {
+    const vals = parseCSVLine(lines[i]);
+    if(vals.length < 2) continue;
+    const obj = {};
+    headers.forEach((h, j) => obj[h] = vals[j] || '');
+    rows.push(obj);
+  }
+  return rows;
+}
+
+// ==================== IMPORT / EXPORT ====================
+function openImportModal() { $('importModal').classList.add('active'); }
+function closeImportModal() { $('importModal').classList.remove('active'); }
+
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    $('importData').value = e.target.result;
+  };
+  reader.readAsText(file);
+}
+
+// Drag and drop
+const fileDrop = $('fileDrop');
+fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('dragover'); });
+fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('dragover'));
+fileDrop.addEventListener('drop', e => {
+  e.preventDefault(); fileDrop.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if(file) {
+    const reader = new FileReader();
+    reader.onload = ev => { $('importData').value = ev.target.result; };
+    reader.readAsText(file);
+  }
+});
+
+function importData() {
+  const raw = $('importData').value.trim();
+  if(!raw) return;
+  const isNZD = $('isNZD').checked;
+  const rate = parseFloat($('nzdRate').value) || 0.586;
+  let data;
+  try {
+    data = JSON.parse(raw);
+    if(!Array.isArray(data)) {
+      if(data.campaigns) data = data.campaigns;
+      else if(data.data) data = data.data;
+      else data = [data];
+    }
+  } catch(e) {
+    data = parseCSV(raw);
+  }
+  if(!data || !data.length) { alert('No valid data found'); return; }
+  data.forEach(row => {
+    if(row.name && !row.campaign_name) row.campaign_name = row.name;
+    if(row.campaign && !row.campaign_name) row.campaign_name = row.campaign;
+    if(row.account_name && !row.account) row.account = row.account_name;
+    // NZD conversion
+    const shouldConvertNZD = isNZD || isNZDAccount(row.account);
+    if(shouldConvertNZD) {
+      ['spend','budget','revenue','cpl'].forEach(f => {
+        if(row[f] != null) {
+          const v = parseNum(row[f]);
+          if(v != null) { row['nzd_'+f] = v; row[f] = v * rate; }
+        }
+      });
+      row.isNZD = true;
+    }
+    calcMetrics(row);
+  });
+  campaigns = campaigns.concat(data);
+  closeImportModal();
+  $('importData').value = '';
+  startTimer();
+  reRender();
+}
+
+function exportCSV() {
+  const headers = ['campaign_name','account','status','tort','budget','spend','leads','cap','cpl','be','target_cpl','margin','revenue','profit','hook_pct','hold_pct','cpqc','impressions','link_clicks','landing_page_views','video_3sec_views','video_50pct_views','notes'];
+  let csv = headers.join(',') + '\n';
+  campaigns.forEach(c => {
+    csv += [c.campaign_name, c.account, c.status, c.tort, c._budget, c._spend, c._leads, c._cap, c._cpl?.toFixed(2), c.be, c.targetCpl, c._margin?.toFixed(1), c._revenue, c._profit?.toFixed(2), c._hook?.toFixed(1), c._hold?.toFixed(1), c._cpqc?.toFixed(2), c._impr, c._lc, c._lpv, c._v3, c._v50, c.notes||''].map(v => '"'+(v??'')+'"').join(',') + '\n';
+  });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'meta_ads_export_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+// ==================== SAMPLE DATA ====================
+function loadSampleData() {
+  const accts = ['Alpha Media', 'Beta Ads', 'Gamma Digital', 'Delta Marketing', 'Epsilon Group', 'Zeta Agency', 'Eta Corp', 'Theta Media'];
+  const sample = [
+    {campaign_name:'Hernia Mesh - Broad Targeting - V1', account:accts[0], status:'ACTIVE', budget:500, spend:1245.67, leads:18, cap:25, impressions:45000, link_clicks:1200, landing_page_views:890, video_3sec_views:15000, video_50pct_views:8500, revenue:2800, notes:'Top performer'},
+    {campaign_name:'Hernia Mesh - LAL 1% - V2', account:accts[1], status:'ACTIVE', budget:300, spend:876.43, leads:12, cap:20, impressions:32000, link_clicks:900, landing_page_views:650, video_3sec_views:11000, video_50pct_views:5800, revenue:1900, notes:''},
+    {campaign_name:'HM Retarget - DPA - V1', account:accts[0], status:'PAUSED', budget:200, spend:234.12, leads:3, cap:10, impressions:12000, link_clicks:340, landing_page_views:200, video_3sec_views:4000, video_50pct_views:1800, revenue:450, notes:'Low volume'},
+    {campaign_name:'Hernia Mesh - Interest Stack - V3', account:accts[2], status:'ACTIVE', budget:400, spend:1567.00, leads:22, cap:30, impressions:51000, link_clicks:1380, landing_page_views:1020, video_3sec_views:17200, video_50pct_views:9100, revenue:3400, notes:'Scaling up'},
+    {campaign_name:'Depo Pulaski - Interest - V1', account:accts[2], status:'ACTIVE', budget:400, spend:1567.89, leads:10, cap:15, impressions:52000, link_clicks:1450, landing_page_views:1050, video_3sec_views:17500, video_50pct_views:9200, revenue:3200, notes:'Scaling'},
+    {campaign_name:'Depo Pulaski - LAL 1%', account:accts[3], status:'ACTIVE', budget:350, spend:989.23, leads:7, cap:12, impressions:38000, link_clicks:1050, landing_page_views:780, video_3sec_views:13000, video_50pct_views:6500, revenue:2100, notes:''},
+    {campaign_name:'Depo LCA - Broad - V3', account:accts[0], status:'ACTIVE', budget:450, spend:2134.56, leads:14, cap:20, impressions:61000, link_clicks:1680, landing_page_views:1250, video_3sec_views:20500, video_50pct_views:11000, revenue:4500, notes:'Best LCA campaign'},
+    {campaign_name:'Depo LCA - Retarget', account:accts[1], status:'ACTIVE', budget:150, spend:456.78, leads:4, cap:8, impressions:18000, link_clicks:520, landing_page_views:380, video_3sec_views:6000, video_50pct_views:3200, revenue:1200, notes:''},
+    {campaign_name:'ILM EST - Interest - V1', account:accts[4], status:'ACTIVE', budget:600, spend:3456.78, leads:9, cap:12, impressions:78000, link_clicks:2100, landing_page_views:1500, video_3sec_views:26000, video_50pct_views:14000, revenue:5800, notes:'High CPL but converting'},
+    {campaign_name:'ILM EST - LAL - V2', account:accts[5], status:'ACTIVE', budget:400, spend:1890.45, leads:5, cap:8, impressions:42000, link_clicks:1150, landing_page_views:840, video_3sec_views:14000, video_50pct_views:7400, revenue:3200, notes:''},
+    {campaign_name:'ILM NZT - Broad - V1', account:accts[5], status:'RESTRICTED', budget:500, spend:2345.67, leads:6, cap:10, impressions:55000, link_clicks:1500, landing_page_views:1100, video_3sec_views:18500, video_50pct_views:9800, revenue:3800, notes:'Account restricted'},
+    {campaign_name:'Talcum - Broad - V2', account:accts[6], status:'ACTIVE', budget:350, spend:1678.90, leads:7, cap:10, impressions:48000, link_clicks:1320, landing_page_views:980, video_3sec_views:16000, video_50pct_views:8400, revenue:2800, notes:''},
+    {campaign_name:'Talcum - LAL 2% - V1', account:accts[1], status:'ACTIVE', budget:250, spend:867.45, leads:4, cap:8, impressions:29000, link_clicks:810, landing_page_views:590, video_3sec_views:9800, video_50pct_views:5100, revenue:1400, notes:'Testing'},
+    {campaign_name:'SMA - Interest - V1', account:accts[2], status:'ACTIVE', budget:200, spend:543.21, leads:11, cap:20, impressions:35000, link_clicks:980, landing_page_views:720, video_3sec_views:11800, video_50pct_views:6200, revenue:1200, notes:'Under target CPL'},
+    {campaign_name:'SMA - Retarget - V1', account:accts[0], status:'PAUSED', budget:100, spend:123.45, leads:3, cap:5, impressions:8000, link_clicks:220, landing_page_views:160, video_3sec_views:2800, video_50pct_views:1400, revenue:300, notes:'Paused - low vol'},
+    {campaign_name:'SMA - Broad - V3', account:accts[3], status:'ACTIVE', budget:250, spend:678.90, leads:15, cap:25, impressions:42000, link_clicks:1180, landing_page_views:870, video_3sec_views:14100, video_50pct_views:7300, revenue:1650, notes:'Best SMA'},
+    {campaign_name:'PowerPort - Broad - V1', account:accts[3], status:'ACTIVE', budget:400, spend:1890.34, leads:12, cap:18, impressions:56000, link_clicks:1540, landing_page_views:1140, video_3sec_views:18800, video_50pct_views:10000, revenue:3600, notes:'Steady performance'},
+    {campaign_name:'PowerPort - LAL - V2', account:accts[4], status:'ACTIVE', budget:300, spend:1234.56, leads:8, cap:14, impressions:39000, link_clicks:1080, landing_page_views:790, video_3sec_views:13100, video_50pct_views:6900, revenue:2400, notes:''},
+    {campaign_name:'Suco - Broad - V1', account:accts[7], status:'ACTIVE', budget:150, spend:234.56, leads:12, cap:30, impressions:42000, link_clicks:1150, landing_page_views:840, video_3sec_views:14000, video_50pct_views:7300, revenue:800, notes:'Low CPA'},
+    {campaign_name:'Suco - Interest - V2', account:accts[6], status:'ACTIVE', budget:100, spend:156.78, leads:8, cap:20, impressions:28000, link_clicks:780, landing_page_views:570, video_3sec_views:9400, video_50pct_views:4900, revenue:520, notes:''},
+    {campaign_name:'Roblox - Interest - V1', account:accts[4], status:'ACTIVE', budget:300, spend:1123.78, leads:9, cap:15, impressions:41000, link_clicks:1120, landing_page_views:820, video_3sec_views:13700, video_50pct_views:7100, revenue:2100, notes:''},
+    {campaign_name:'Roblox - LAL - V2', account:accts[5], status:'ACTIVE', budget:250, spend:678.90, leads:5, cap:10, impressions:24000, link_clicks:670, landing_page_views:490, video_3sec_views:8000, video_50pct_views:4200, revenue:1050, notes:'New campaign'},
+    {campaign_name:'Roblox - Retarget', account:accts[7], status:'PAUSED', budget:100, spend:89.12, leads:1, cap:5, impressions:5000, link_clicks:140, landing_page_views:100, video_3sec_views:1700, video_50pct_views:850, revenue:200, notes:''},
+  ];
+  sample.forEach(c => calcMetrics(c));
+  campaigns = sample;
+  closeImportModal();
+  expandedTorts = new Set();
+  startTimer();
+  reRender();
+}
+
+// ==================== VIEW TOGGLES ====================
+function setView(btn, view) {
+  currentView = view;
+  document.querySelectorAll('.view-toggle-group:first-of-type .view-toggle-btn').forEach(b => b.classList.remove('active'));
+  // Find correct group
+  btn.classList.add('active');
+  reRender();
+}
+function setPlatform(btn, platform) {
+  currentPlatform = platform;
+  btn.parentElement.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  reRender();
+}
+
+// ==================== FILTERING & SORTING ====================
+function getFilteredCampaigns() {
+  const search = ($('searchInput').value || '').toLowerCase();
+  const status = $('statusFilter').value;
+  const activeOnly = $('activeOnly').checked;
+  return campaigns.filter(c => {
+    if(search && !c.campaign_name?.toLowerCase().includes(search) && !c.account?.toLowerCase().includes(search) && !c.tort?.toLowerCase().includes(search)) return false;
+    if(activeOnly && (c.status||'').toLowerCase() !== 'active') return false;
+    if(status !== 'all') {
+      const s = (c.status||'').toLowerCase();
+      if(status === 'active' && s !== 'active') return false;
+      if(status === 'paused' && s !== 'paused') return false;
+      if(status === 'restricted' && !s.includes('restrict')) return false;
+    }
+    return true;
+  });
+}
+
+function groupByTort(data) {
+  const groups = {};
+  data.forEach(c => { const t = c.tort || 'Other'; if(!groups[t]) groups[t] = []; groups[t].push(c); });
+  return groups;
+}
+
+function sortData(data) {
+  if(!sortCol) return data;
+  return [...data].sort((a, b) => {
+    let va, vb;
+    switch(sortCol) {
+      case 'name': va=a.campaign_name||''; vb=b.campaign_name||''; break;
+      case 'account': va=a.account||''; vb=b.account||''; break;
+      case 'status': va=a.status||''; vb=b.status||''; break;
+      case 'budget': va=a._budget||0; vb=b._budget||0; break;
+      case 'spend': va=a._spend||0; vb=b._spend||0; break;
+      case 'leads': va=a._leads||0; vb=b._leads||0; break;
+      case 'cap': va=a._cap||0; vb=b._cap||0; break;
+      case 'cpl': va=a._cpl||9999; vb=b._cpl||9999; break;
+      case 'margin': va=a._margin||0; vb=b._margin||0; break;
+      case 'revenue': va=a._revenue||0; vb=b._revenue||0; break;
+      case 'profit': va=a._profit||0; vb=b._profit||0; break;
+      case 'hook': va=a._hook||0; vb=b._hook||0; break;
+      case 'hold': va=a._hold||0; vb=b._hold||0; break;
+      case 'cpqc': va=a._cpqc||9999; vb=b._cpqc||9999; break;
+      default: return 0;
+    }
+    if(typeof va === 'string') { let r = va.localeCompare(vb); return sortDir === 'asc' ? r : -r; }
+    return sortDir === 'asc' ? (va - vb) : (vb - va);
+  });
+}
+
+function sortBy(col) {
+  if(sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  else { sortCol = col; sortDir = 'asc'; }
+  reRender();
+}
+
+function toggleTort(tort) {
+  if(expandedTorts.has(tort)) expandedTorts.delete(tort);
+  else expandedTorts.add(tort);
+  reRender();
+}
+
+// ==================== MAIN RENDER ====================
+function reRender() {
+  const filtered = getFilteredCampaigns();
+  const groups = groupByTort(filtered);
+  const sortedGroups = Object.keys(groups).sort();
+
+  // Update timestamp
+  const now = new Date();
+  $('navTimestamp').textContent = 'Updated ' + now.toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'});
+
+  // Month label
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  $('revMonthLabel').textContent = months[now.getMonth()] + ' REVENUE';
+
+  // Accounts bar
+  renderAccountsBar(filtered);
+
+  // Revenue card
+  renderRevenueCard(filtered, groups);
+
+  // Account spend bars
+  renderSpendBars(filtered);
+
+  // Filter stats
+  const activeCount = filtered.filter(c => (c.status||'').toLowerCase() === 'active').length;
+  $('filterStats').innerHTML = `<strong>${sortedGroups.length}</strong> groups · <strong>${filtered.length}</strong> campaigns · <strong>${activeCount}</strong> active`;
+
+  // Table header
+  $('tableHead').innerHTML = COLUMNS.map(col => {
+    const titleAttr = col.key === 'hold' ? ' title="Hold Score: 3-sec plays ÷ 50% watched"' :
+                      col.key === 'cpqc' ? ' title="Cost Per Qualified Click: Spend ÷ (Link Clicks × LPV Rate)"' : '';
+    return `<th class="${col.cls} ${sortCol===col.key?'sorted':''}" style="text-align:${col.align}"${titleAttr} onclick="${col.sortable?`sortBy('${col.key}')`:''}">
+      ${col.label}${col.sortable ? `<span class="sort-ico">${sortCol===col.key?(sortDir==='asc'?'▲':'▼'):'↕'}</span>` : ''}
+    </th>`;
+  }).join('');
+
+  // Empty state
+  if(campaigns.length === 0) {
+    $('tableBody').innerHTML = `<tr><td colspan="${COLUMNS.length}" class="empty-state" style="text-align:center">
+      <div class="empty-icon">📊</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:4px">No campaigns loaded</div>
+      <div style="font-size:13px;color:var(--muted-foreground)">Import CSV data or load sample data to get started</div>
+      <div style="margin-top:16px;display:flex;gap:8px;justify-content:center">
+        <button class="btn btn-primary" onclick="openImportModal()">Import Data</button>
+        <button class="btn" onclick="loadSampleData()">Load Sample Data</button>
+      </div>
+    </td></tr>`;
+    $('tableFoot').innerHTML = '';
+    return;
+  }
+
+  // Table body
+  let html = '';
+  let totalSpend=0, totalLeads=0, totalRevenue=0, totalProfit=0;
+
+  sortedGroups.forEach(tort => {
+    const rows = sortData(groups[tort]);
+    const expanded = expandedTorts.has(tort);
+    const tSpend = rows.reduce((s,c) => s + c._spend, 0);
+    const tLeads = rows.reduce((s,c) => s + c._leads, 0);
+    const tRev = rows.reduce((s,c) => s + c._revenue, 0);
+    const tProfit = tRev - tSpend;
+    const tCpl = tLeads > 0 ? tSpend / tLeads : null;
+    const tMargin = tRev > 0 ? ((tRev - tSpend) / tRev * 100) : null;
+    const t = TARGET_CPLS[tort] || TARGET_CPLS['Other'];
+    const activeN = rows.filter(c => (c.status||'').toLowerCase() === 'active').length;
+    const tBudget = rows.reduce((s,c) => s + (c._budget||0), 0);
+    const tCap = rows.reduce((s,c) => s + (c._cap||0), 0);
+
+    // Aggregate hook/hold for tort
+    const tImpr = rows.reduce((s,c) => s + (c._impr||0), 0);
+    const tV3 = rows.reduce((s,c) => s + (c._v3||0), 0);
+    const tV50 = rows.reduce((s,c) => s + (c._v50||0), 0);
+    const tLpv = rows.reduce((s,c) => s + (c._lpv||0), 0);
+    const tHook = tImpr > 0 ? (tV3 / tImpr * 100) : null;
+    const tHold = tV3 > 0 ? (tV50 / tV3 * 100) : null;
+    const tCpqc = tLpv > 0 ? tSpend / tLpv : null;
+
+    totalSpend += tSpend; totalLeads += tLeads; totalRevenue += tRev; totalProfit += tProfit;
+
+    // Tort row
+    html += `<tr class="tort-row" onclick="toggleTort('${tort}')">
+      <td style="text-align:left">
+        <span class="chev ${expanded?'expanded':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        <span class="tort-name">${tort}</span>
+        <span class="tort-count">${rows.length}</span>
+      </td>
+      <td style="text-align:left"><span style="font-size:11px;color:var(--muted-foreground)">${activeN}/${rows.length} active</span></td>
+      <td style="text-align:center">${statusDotHTML(activeN > 0 ? 'active' : 'paused')}</td>
+      <td>${fmt(tBudget, 0)}</td>
+      <td>${fmt(tSpend, 2)}</td>
+      <td style="font-weight:700">${fmtN(tLeads)}</td>
+      <td>${fmtN(tCap)}</td>
+      <td>${cplBadgeHTML(tCpl, t.be, t.target)}</td>
+      <td style="color:var(--muted-foreground)">${fmt(t.be, 0)}</td>
+      <td><span style="color:#3b82f6;font-weight:600">${fmt(t.target, 2)}</span></td>
+      <td>${marginHTML(tMargin)}</td>
+      <td>${fmt(tRev, 2)}</td>
+      <td><span class="${tProfit >= 0 ? 'profit-pos' : 'profit-neg'}">${fmt(tProfit, 2)}</span></td>
+      <td>${hookHTML(tHook)}</td>
+      <td>${holdHTML(tHold)}</td>
+      <td>${cpqcHTML(tCpqc)}</td>
+      <td></td>
+    </tr>`;
+
+    // Campaign rows
+    rows.forEach(c => {
+      const nzdNote = c.isNZD ? ` (NZD ${fmt(c.nzd_spend,2)})` : '';
+      html += `<tr class="campaign-row ${expanded ? '' : 'hidden'}" data-tort="${tort}">
+        <td style="text-align:left">${c.campaign_name || '—'}</td>
+        <td style="text-align:left">${acctPillHTML(c.account)}</td>
+        <td style="text-align:center">${statusDotHTML(c.status)} <span style="font-size:10px;color:var(--muted-foreground);margin-left:2px">${(c.status||'').charAt(0).toUpperCase()+(c.status||'').slice(1).toLowerCase()}</span></td>
+        <td>${fmt(c._budget, 0)}</td>
+        <td>${fmt(c._spend, 2)}</td>
+        <td>${fmtN(c._leads)}</td>
+        <td>${fmtN(c._cap)}</td>
+        <td>${cplBadgeHTML(c._cpl, c.be, c.targetCpl)}</td>
+        <td style="color:var(--muted-foreground)">${fmt(c.be, 0)}</td>
+        <td><span style="color:#3b82f6;font-weight:600">${fmt(c.targetCpl, 2)}</span></td>
+        <td>${marginHTML(c._margin)}</td>
+        <td>${fmt(c._revenue, 2)}</td>
+        <td><span class="${c._profit >= 0 ? 'profit-pos' : 'profit-neg'}">${fmt(c._profit, 2)}</span></td>
+        <td>${hookHTML(c._hook)}</td>
+        <td>${holdHTML(c._hold)}</td>
+        <td>${cpqcHTML(c._cpqc)}</td>
+        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;text-align:left" title="${c.notes||''}">${c.notes||''}</td>
+      </tr>`;
+    });
+  });
+
+  $('tableBody').innerHTML = html;
+
+  // Footer totals
+  const totalCpl = totalLeads > 0 ? totalSpend / totalLeads : null;
+  const totalMargin = totalRevenue > 0 ? ((totalRevenue - totalSpend) / totalRevenue * 100) : null;
+  const allImpr = filtered.reduce((s,c) => s + (c._impr||0), 0);
+  const allV3 = filtered.reduce((s,c) => s + (c._v3||0), 0);
+  const allV50 = filtered.reduce((s,c) => s + (c._v50||0), 0);
+  const allLpv = filtered.reduce((s,c) => s + (c._lpv||0), 0);
+  const allHook = allImpr > 0 ? (allV3/allImpr*100) : null;
+  const allHold = allV3 > 0 ? (allV50/allV3*100) : null;
+  const allCpqc = allLpv > 0 ? totalSpend/allLpv : null;
+
+  $('tableFoot').innerHTML = `<tr class="summary-row">
+    <td style="text-align:left"><strong>All Offers (${sortedGroups.length} groups · ${filtered.length} campaigns)</strong></td>
+    <td></td><td></td>
+    <td>—</td>
+    <td><strong>${fmt(totalSpend, 2)}</strong></td>
+    <td><strong>${fmtN(totalLeads)}</strong></td>
+    <td>—</td>
+    <td>${cplBadgeHTML(totalCpl, null, null)}</td>
+    <td>—</td><td>—</td>
+    <td>${marginHTML(totalMargin)}</td>
+    <td><strong>${fmt(totalRevenue, 2)}</strong></td>
+    <td><strong class="${totalProfit >= 0 ? 'profit-pos' : 'profit-neg'}">${fmt(totalProfit, 2)}</strong></td>
+    <td>${hookHTML(allHook)}</td>
+    <td>${holdHTML(allHold)}</td>
+    <td>${cpqcHTML(allCpqc)}</td>
+    <td></td>
+  </tr>`;
+}
+
+function renderAccountsBar(filtered) {
+  const accts = {};
+  filtered.forEach(c => {
+    const a = c.account || 'Unknown';
+    if(!accts[a]) accts[a] = {active:0, paused:0, restricted:0, total:0, spend:0};
+    accts[a].total++;
+    accts[a].spend += c._spend || 0;
+    const s = (c.status||'').toLowerCase();
+    if(s === 'active') accts[a].active++;
+    else if(s.includes('restrict')) accts[a].restricted++;
+    else accts[a].paused++;
+  });
+  if(Object.keys(accts).length === 0) {
+    $('accountsBar').innerHTML = '<span style="font-size:12px;color:var(--muted-foreground);padding:4px 8px;">No accounts loaded</span>';
+    return;
+  }
+  $('accountsBar').innerHTML = Object.keys(accts).sort().map(a => {
+    const d = accts[a];
+    const color = getAcctColor(a);
+    let dotCls = 'acct-dot-active';
+    if(d.restricted > 0) dotCls = 'acct-dot-restricted';
+    else if(d.active === 0) dotCls = 'acct-dot-disabled';
+    return `<span class="acct-bar-pill apill-${color}"><span class="acct-dot ${dotCls}"></span>${a} <span style="opacity:.5">(${d.total})</span></span>`;
+  }).join('');
+}
+
+function renderRevenueCard(filtered, groups) {
+  const totalRev = filtered.reduce((s,c) => s + c._revenue, 0);
+  const totalSpend = filtered.reduce((s,c) => s + c._spend, 0);
+  const goal = parseFloat($('revGoalInput').value) || 100000;
+  const pct = goal > 0 ? Math.min((totalRev / goal) * 100, 100) : 0;
+  const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
+  const dayOfMonth = new Date().getDate();
+  const projected = dayOfMonth > 0 ? (totalRev / dayOfMonth) * daysInMonth : 0;
+
+  $('revAmount').textContent = fmt(totalRev, 0);
+  $('revGoalText').innerHTML = `Goal: ${fmt(goal,0)} · ${pct.toFixed(1)}% achieved`;
+  $('revBar').style.width = pct + '%';
+  $('revProjectedBadge').innerHTML = `
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    Projected: ${fmt(projected, 0)}`;
+  $('revTotalSpend').textContent = fmt(totalSpend, 0);
+
+  const totalLeads = filtered.reduce((s,c) => s + c._leads, 0);
+  const avgCpl = totalLeads > 0 ? totalSpend / totalLeads : null;
+  $('revStatsRow').innerHTML = `
+    <div class="rev-stat-item"><div class="rev-stat-label">Total Profit</div><div class="rev-stat-value ${totalRev-totalSpend>=0?'profit-pos':'profit-neg'}">${fmt(totalRev-totalSpend,0)}</div></div>
+    <div class="rev-stat-item"><div class="rev-stat-label">Avg CPL</div><div class="rev-stat-value">${avgCpl!=null?fmt(avgCpl,2):'—'}</div></div>
+    <div class="rev-stat-item"><div class="rev-stat-label">Total Leads</div><div class="rev-stat-value">${fmtN(totalLeads)}</div></div>
+    <div class="rev-stat-item"><div class="rev-stat-label">Campaigns</div><div class="rev-stat-value">${filtered.length}</div></div>
+    <div class="rev-stat-item"><div class="rev-stat-label">ROAS</div><div class="rev-stat-value">${totalSpend>0?(totalRev/totalSpend).toFixed(2)+'x':'—'}</div></div>
+  `;
+
+  $('tortBreakdown').innerHTML = Object.keys(groups).sort().map(tort => {
+    const rev = groups[tort].reduce((s,c) => s + c._revenue, 0);
+    const spend = groups[tort].reduce((s,c) => s + c._spend, 0);
+    const profitable = rev >= spend;
+    return `<span class="tort-chip ${profitable ? 'tort-chip-pos' : 'tort-chip-neg'}">${tort}: ${fmt(rev,0)}</span>`;
+  }).join('');
+}
+
+function renderSpendBars(filtered) {
+  const accts = {};
+  filtered.forEach(c => {
+    const a = c.account || 'Unknown';
+    if(!accts[a]) accts[a] = {spend:0, budget:0};
+    accts[a].spend += c._spend || 0;
+    accts[a].budget += c._budget || 0;
+  });
+  const entries = Object.entries(accts).sort((a,b) => b[1].spend - a[1].spend).slice(0, 4);
+  if(entries.length === 0) {
+    $('spendBarsSection').innerHTML = '';
+    return;
+  }
+  $('spendBarsSection').innerHTML = entries.map(([name, d]) => {
+    const pct = d.budget > 0 ? Math.min((d.spend / d.budget) * 100, 100) : 0;
+    const color = pct > 90 ? '#ef4444' : pct > 70 ? '#f59e0b' : '#3b82f6';
+    return `<div class="spend-bar-card">
+      <div class="spend-bar-title">${name}</div>
+      <div class="spend-bar-values"><span>${fmt(d.spend,0)}</span><span style="color:var(--muted-foreground)">${fmt(d.budget,0)}</span></div>
+      <div class="spend-bar-track"><div class="spend-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ==================== INIT ====================
+reRender();
+</script>
+</body>
+</html>
