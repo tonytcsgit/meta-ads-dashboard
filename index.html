@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meta Ads Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: oklch(35% .18 250);
+  --primary-light: oklch(55% .15 250);
+  --radius: .5rem;
+  --bg: #f8fafc;
+  --bg-card: #fff;
+  --bg-card-hover: #eef4ff;
+  --text: oklch(0.15 0.01 240);
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --table-header-bg: #f1f5f9;
+  --shadow: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,.1);
+  --row-alt: #f8fafc;
+  --row-even: #fff;
+  --row-hover: #eef4ff;
+  --emerald-bg: rgba(16,185,129,.15);
+  --emerald-text: #047857;
+  --emerald-border: rgba(16,185,129,.2);
+  --emerald-dot: #10b981;
+  --amber-bg: rgba(245,158,11,.15);
+  --amber-text: #d97706;
+  --amber-border: rgba(245,158,11,.2);
+  --amber-dot: #f59e0b;
+  --red-bg: rgba(239,68,68,.15);
+  --red-text: #b91c1c;
+  --red-border: rgba(239,68,68,.2);
+  --red-dot: #ef4444;
+  --green-profit: #059669;
+  --red-loss: #dc2626;
+  --child-border-accent: #6366f1;
+}
+html.dark {
+  --bg: #0f172a;
+  --bg-card: #1e293b;
+  --bg-card-hover: #2d3a4f;
+  --text: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --border: #334155;
+  --table-header-bg: #1e293b;
+  --shadow: 0 1px 3px rgba(0,0,0,.3);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,.4);
+  --row-alt: #0f172a;
+  --row-even: #1e293b;
+  --row-hover: #2d3a4f;
+  --emerald-text: #6ee7b7;
+  --emerald-bg: rgba(16,185,129,.15);
+  --amber-text: #fbbf24;
+  --amber-bg: rgba(245,158,11,.15);
+  --red-text: #fca5a5;
+  --red-bg: rgba(239,68,68,.15);
+  --green-profit: #34d399;
+  --red-loss: #f87171;
+  --child-border-accent: #818cf8;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  transition: background .3s, color .3s;
+}
+/* Scrollbar */
+::-webkit-scrollbar { height:6px; width:6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius:3px; }
+
+/* Accounts Bar */
+.accounts-bar {
+  display:flex; gap:8px; padding:12px 24px;
+  overflow-x:auto; white-space:nowrap;
+  background: var(--bg-card); border-bottom:1px solid var(--border);
+}
+.account-pill {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:4px 12px; border-radius:9999px;
+  border:1px solid var(--border);
+  font-size:12px; font-weight:500;
+  cursor:pointer; transition: all .15s;
+  flex-shrink:0;
+}
+.account-pill:hover { box-shadow: var(--shadow); }
+.account-pill .dot {
+  width:7px; height:7px; border-radius:50%; flex-shrink:0;
+}
+.dot-green { background:#10b981; }
+.dot-red { background:#ef4444; }
+.dot-gray { background:#9ca3af; }
+
+/* Nav Bar */
+.navbar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 24px; background:var(--bg-card);
+  border-bottom:1px solid var(--border);
+  position:sticky; top:0; z-index:100;
+  box-shadow: var(--shadow);
+}
+.navbar-title { font-size:18px; font-weight:700; display:flex; align-items:center; gap:10px; }
+.navbar-title svg { color: var(--primary); }
+.navbar-right { display:flex; align-items:center; gap:12px; }
+.timestamp { font-size:12px; color:var(--text-secondary); }
+.btn {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 14px; border-radius:var(--radius);
+  border:1px solid var(--border); background:var(--bg-card);
+  color:var(--text); font-size:13px; font-weight:500;
+  cursor:pointer; transition:all .15s; font-family:inherit;
+}
+.btn:hover { background:var(--bg-card-hover); box-shadow:var(--shadow); }
+.btn-primary { background:var(--primary); color:#fff; border-color:var(--primary); }
+.btn-primary:hover { opacity:.9; }
+.btn-sm { padding:4px 10px; font-size:12px; }
+
+/* Dark mode toggle */
+.dark-toggle {
+  width:40px; height:22px; border-radius:11px;
+  background:var(--border); border:none; cursor:pointer;
+  position:relative; transition:background .3s;
+}
+.dark-toggle::after {
+  content:''; position:absolute; top:2px; left:2px;
+  width:18px; height:18px; border-radius:50%;
+  background:#fff; transition:transform .3s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+html.dark .dark-toggle { background:var(--primary); }
+html.dark .dark-toggle::after { transform:translateX(18px); }
+
+/* Revenue Card */
+.revenue-card {
+  margin:16px 24px; padding:20px 24px;
+  background:var(--bg-card); border-radius:var(--radius);
+  border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.1);
+}
+.revenue-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
+.revenue-title { font-size:13px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.5px; }
+.revenue-amount { font-size:32px; font-weight:700; margin:4px 0; }
+.revenue-goal { font-size:13px; color:var(--text-secondary); }
+.progress-bar-wrap { height:8px; background:var(--border); border-radius:4px; margin:12px 0; overflow:hidden; }
+.progress-bar-fill { height:100%; border-radius:4px; background:linear-gradient(90deg, var(--primary), var(--primary-light)); transition:width .6s ease; }
+.revenue-stats { display:flex; gap:24px; flex-wrap:wrap; margin-top:12px; }
+.revenue-stat { }
+.revenue-stat-label { font-size:11px; color:var(--text-secondary); font-weight:500; }
+.revenue-stat-value { font-size:16px; font-weight:700; }
+.tort-breakdown { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
+.tort-chip {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:4px 12px; border-radius:9999px;
+  font-size:11px; font-weight:500;
+  border:1px solid var(--border);
+  transition: all .15s;
+}
+.tort-chip-positive { background:rgba(16,185,129,.08); color:var(--emerald-text); border-left:3px solid var(--emerald-dot); }
+.tort-chip-negative { background:rgba(239,68,68,.08); color:var(--red-text); border-left:3px solid var(--red-dot); }
+
+/* Filter Bar */
+.filter-bar {
+  display:flex; align-items:center; gap:12px; padding:12px 24px;
+  flex-wrap:wrap;
+}
+.filter-bar input[type="text"],
+.filter-bar input[type="date"],
+.filter-bar select {
+  height:36px; padding:6px 12px; border:1px solid var(--border);
+  border-radius:var(--radius); background:var(--bg-card);
+  color:var(--text); font-size:13px; font-family:inherit;
+  transition: border-color .15s, box-shadow .15s;
+}
+.filter-bar input[type="text"]:focus,
+.filter-bar input[type="date"]:focus,
+.filter-bar select:focus {
+  outline:none; border-color:var(--primary); box-shadow:0 0 0 2px rgba(59,130,246,.15);
+}
+.filter-stats { font-size:13px; color:var(--text-secondary); margin-left:auto; }
+.filter-stats strong { color:var(--text); }
+
+/* Table Container */
+.table-wrap {
+  margin:0 24px 24px; border-radius:var(--radius);
+  border:1px solid var(--border); overflow:hidden;
+  box-shadow:0 1px 3px rgba(0,0,0,0.1); background:var(--bg-card);
+}
+.table-scroll { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; min-width:1400px; }
+thead { position:sticky; top:0; z-index:10; }
+th {
+  background:var(--table-header-bg);
+  font-size:11px; font-weight:600; text-transform:uppercase;
+  letter-spacing:.05em; padding:10px 16px;
+  text-align:left; white-space:nowrap;
+  border-bottom:2px solid var(--border);
+  cursor:pointer; user-select:none;
+  color:var(--text-secondary);
+  position:relative;
+}
+th:hover { color:var(--text); }
+th .sort-arrow { font-size:10px; margin-left:4px; opacity:.4; }
+th.sorted .sort-arrow { opacity:1; color:var(--primary); }
+td {
+  padding:12px 16px; white-space:nowrap;
+  border-bottom:1px solid var(--border);
+  font-size:13px; font-variant-numeric:tabular-nums;
+  vertical-align:middle;
+}
+
+/* Alternating rows & hover */
+tr.tort-row { background:var(--row-even); }
+tr.tort-row:nth-child(odd) { background:var(--row-alt); }
+tr.tort-row:hover { background:var(--row-hover); }
+tr.tort-row td { font-weight:600; font-size:14px; }
+tr.campaign-row { background:var(--row-even); }
+tr.campaign-row:nth-child(odd) { background:var(--row-alt); }
+tr.campaign-row:hover { background:var(--row-hover); }
+tr.campaign-row td:first-child { padding-left:32px; border-left:3px solid var(--child-border-accent); }
+tr.campaign-row td { font-size:13px; font-weight:400; }
+tr.campaign-row.hidden { display:none; }
+
+/* Summary / Total row */
+tr.summary-row { background:var(--table-header-bg); }
+tr.summary-row td { font-weight:700; border-top:2px solid var(--border); font-size:13px; font-variant-numeric:tabular-nums; }
+
+/* Chevron */
+.chevron {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:22px; height:22px; cursor:pointer;
+  transition:transform .2s ease, color .15s; margin-right:6px;
+  flex-shrink:0; color:var(--text-secondary);
+  border-radius:4px;
+}
+.chevron:hover { color:var(--primary); background:rgba(99,102,241,.08); }
+.chevron.expanded { transform:rotate(90deg); }
+.chevron svg { width:16px; height:16px; }
+
+/* Tort name link */
+.tort-name { color:var(--primary); font-weight:700; cursor:pointer; font-size:14px; }
+.tort-name:hover { text-decoration:underline; }
+
+/* CPL Badge (pill, no dot) */
+.badge {
+  display:inline-flex; align-items:center;
+  padding:3px 10px; border-radius:9999px;
+  font-size:11px; font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
+.badge-emerald { background:var(--emerald-bg); color:var(--emerald-text); }
+.badge-amber { background:var(--amber-bg); color:var(--amber-text); }
+.badge-red { background:var(--red-bg); color:var(--red-text); }
+
+/* Margin badge */
+.margin-badge {
+  display:inline-flex; align-items:center;
+  padding:2px 8px; border-radius:9999px;
+  font-size:11px; font-weight:600;
+  font-variant-numeric:tabular-nums;
+}
+.margin-green { background:rgba(16,185,129,.12); color:var(--green-profit); }
+.margin-amber { background:rgba(245,158,11,.12); color:var(--amber-text); }
+.margin-red { background:rgba(239,68,68,.12); color:var(--red-loss); }
+.margin-gray { color:var(--text-secondary); }
+
+/* Account pills for table */
+.acct-pill {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:2px 8px; border-radius:9999px;
+  font-size:10px; font-weight:600;
+  border:1px solid;
+}
+.acct-blue { background:rgba(59,130,246,.1); color:#2563eb; border-color:rgba(59,130,246,.2); }
+.acct-violet { background:rgba(139,92,246,.1); color:#7c3aed; border-color:rgba(139,92,246,.2); }
+.acct-orange { background:rgba(249,115,22,.1); color:#ea580c; border-color:rgba(249,115,22,.2); }
+.acct-emerald { background:rgba(16,185,129,.1); color:#059669; border-color:rgba(16,185,129,.2); }
+.acct-rose { background:rgba(244,63,94,.1); color:#e11d48; border-color:rgba(244,63,94,.2); }
+.acct-cyan { background:rgba(6,182,212,.1); color:#0891b2; border-color:rgba(6,182,212,.2); }
+.acct-pink { background:rgba(236,72,153,.1); color:#db2777; border-color:rgba(236,72,153,.2); }
+.acct-indigo { background:rgba(99,102,241,.1); color:#4f46e5; border-color:rgba(99,102,241,.2); }
+
+/* Status dots — 8px */
+.status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.positive { color:var(--green-profit); }
+.negative { color:var(--red-loss); }
+
+/* Offer count badge in table */
+.count-badge {
+  display:inline-flex; align-items:center;
+  padding:1px 7px; border-radius:9999px;
+  font-size:10px; font-weight:600;
+  background:var(--emerald-bg); color:var(--emerald-text);
+  margin-left:6px;
+}
+
+/* Empty table state */
+.empty-state {
+  text-align:center; padding:60px 20px;
+  color:var(--text-secondary); font-size:14px;
+}
+.empty-state .empty-icon { font-size:40px; margin-bottom:12px; opacity:.4; }
+.empty-state .btn { margin-top:16px; }
+
+/* Modal */
+.modal-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.5); z-index:200;
+  align-items:center; justify-content:center;
+}
+.modal-overlay.active { display:flex; }
+.modal {
+  background:var(--bg-card); border-radius:var(--radius);
+  box-shadow:var(--shadow-lg); padding:24px;
+  max-width:640px; width:90%; max-height:80vh; overflow-y:auto;
+  border:1px solid var(--border);
+}
+.modal h3 { margin-bottom:16px; font-size:18px; }
+.modal textarea {
+  width:100%; min-height:200px; padding:12px;
+  border:1px solid var(--border); border-radius:var(--radius);
+  font-family:'Inter',monospace; font-size:12px;
+  background:var(--bg); color:var(--text); resize:vertical;
+}
+.modal-actions { display:flex; gap:8px; margin-top:16px; justify-content:flex-end; }
+
+/* NZD tooltip */
+.nzd-val { cursor:help; border-bottom:1px dashed var(--text-secondary); }
+.nzd-val:hover::after {
+  content:attr(data-nzd); position:absolute;
+  background:var(--text); color:var(--bg);
+  padding:2px 8px; border-radius:4px; font-size:11px;
+  transform:translateY(-100%); white-space:nowrap;
+  pointer-events:none; z-index:50;
+}
+
+/* Section title */
+.section-title {
+  font-size:15px; font-weight:700; padding:16px 24px 8px;
+  display:flex; align-items:center; gap:8px;
+}
+
+/* Config bar */
+.config-bar {
+  display:flex; gap:12px; align-items:center;
+  padding:8px 24px; font-size:12px; color:var(--text-secondary);
+}
+.config-bar label { display:flex; align-items:center; gap:4px; }
+.config-bar input[type="number"] {
+  width:60px; padding:3px 6px;
+  border:1px solid var(--border); border-radius:4px;
+  background:var(--bg-card); color:var(--text); font-size:12px; font-family:inherit;
+}
+
+@media(max-width:768px) {
+  .navbar { flex-wrap:wrap; gap:8px; }
+  .revenue-card { margin:12px; }
+  .filter-bar { padding:12px; }
+  .table-wrap { margin:0 12px 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Accounts Bar -->
+<div class="accounts-bar" id="accountsBar"></div>
+
+<!-- Nav Bar -->
+<nav class="navbar">
+  <div class="navbar-title">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+    Meta Ads Monitor
+  </div>
+  <div class="navbar-right">
+    <span class="timestamp" id="timestamp"></span>
+    <button class="btn btn-sm" onclick="openImportModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Import
+    </button>
+    <button class="btn btn-sm" onclick="exportCSV()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export
+    </button>
+    <button class="dark-toggle" onclick="toggleDark()" title="Toggle dark mode"></button>
+  </div>
+</nav>
+
+<!-- Revenue Summary Card -->
+<div class="revenue-card" id="revenueCard">
+  <div class="revenue-header">
+    <div>
+      <div class="revenue-title">Monthly Revenue</div>
+      <div class="revenue-amount" id="revTotal">$0</div>
+      <div class="revenue-goal" id="revGoal">Goal: $0 · <span id="revPct">0</span>% achieved</div>
+    </div>
+    <div style="text-align:right">
+      <div class="revenue-title">Projected</div>
+      <div class="revenue-stat-value" id="revProjected">$0</div>
+      <div class="revenue-title" style="margin-top:8px">Total Spend</div>
+      <div class="revenue-stat-value" id="revSpend">$0</div>
+    </div>
+  </div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="revBar" style="width:0%"></div></div>
+  <div class="revenue-stats" id="revStats"></div>
+  <div class="tort-breakdown" id="tortBreakdown"></div>
+</div>
+
+<!-- Config bar -->
+<div class="config-bar">
+  <label>NZD→USD Rate: <input type="number" id="nzdRate" value="0.586" step="0.001" min="0" max="2" onchange="reRender()"></label>
+  <label>Revenue Goal: $<input type="number" id="revGoalInput" value="100000" step="1000" min="0" onchange="reRender()"></label>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <input type="text" id="searchInput" placeholder="Search campaigns..." oninput="reRender()">
+  <input type="date" id="dateFrom">
+  <input type="date" id="dateTo">
+  <select id="statusFilter" onchange="reRender()">
+    <option value="all">All Statuses</option>
+    <option value="active">Active</option>
+    <option value="paused">Paused</option>
+    <option value="restricted">Restricted</option>
+  </select>
+  <div class="filter-stats" id="filterStats"></div>
+</div>
+
+<!-- Main Table -->
+<div class="section-title">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+  Campaign Performance
+</div>
+<div class="table-wrap">
+  <div class="table-scroll">
+    <table id="mainTable">
+      <thead><tr id="tableHead"></tr></thead>
+      <tbody id="tableBody"></tbody>
+      <tfoot id="tableFoot"></tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="importModal" onclick="if(event.target===this)closeImportModal()">
+  <div class="modal">
+    <h3>Import Data</h3>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">
+      Paste CSV data or JSON output from media_buy_report.py
+    </p>
+    <textarea id="importData" placeholder="Paste CSV or JSON data here..."></textarea>
+    <div style="margin-top:8px;font-size:12px;color:var(--text-secondary)">
+      CSV columns: campaign_name, account, status, budget, spend, leads, cap, cpl, impressions, link_clicks, landing_page_views, video_3sec_views, video_50pct_views, revenue, notes
+    </div>
+    <div style="margin-top:8px">
+      <label style="font-size:12px;display:flex;align-items:center;gap:4px">
+        <input type="checkbox" id="isNZD"> Data is in NZD
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="loadSampleData()">Load Sample Data</button>
+      <button class="btn" onclick="closeImportModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="importData()">Import</button>
+    </div>
+  </div>
+</div>
+
+<div style="height:40px"></div>
+
+<script>
+// ==================== STATE ====================
+let campaigns = [];
+let expandedTorts = new Set();
+let sortCol = null;
+let sortDir = 'asc';
+let hasVideoData = false; // Track if video columns have data
+
+const ACCT_COLORS = ['blue','violet','orange','emerald','rose','cyan','pink','indigo'];
+let acctColorMap = {};
+let acctColorIdx = 0;
+
+const TARGET_CPLS = {
+  'Depo LCA': { be: 200, target: 140 },
+  'Depo Pulaski': { be: 200, target: 140 },
+  'Hernia Mesh': { be: 81, target: 56.70 },
+  'ILM EST': { be: 405, target: 325 },
+  'ILM NZT': { be: 405, target: 325 },
+  'ILM': { be: 405, target: 325 },
+  'PowerPort': { be: 180, target: 126 },
+  'Roblox': { be: 140, target: 120 },
+  'SMA': { be: 55.25, target: 38.68 },
+  'Suco': { be: 25, target: 17.50 },
+  'Talcum': { be: 270, target: 200 },
+  'CoverageHub': { be: 100, target: 70 },
+  'Other': { be: 100, target: 70 },
+};
+
+function getVisibleColumns() {
+  const base = [
+    { key:'name', label:'Offer / Campaign', align:'left', sortable:true },
+    { key:'account', label:'Account', align:'left', sortable:true },
+    { key:'status', label:'Status', align:'center', sortable:true },
+    { key:'budget', label:'Budget', align:'right', sortable:true },
+    { key:'spend', label:'Spend', align:'right', sortable:true },
+    { key:'leads', label:'Leads', align:'right', sortable:true },
+    { key:'cap', label:'Cap', align:'right', sortable:true },
+    { key:'cpl', label:'CPL', align:'right', sortable:true },
+    { key:'be', label:'B/E', align:'right', sortable:false },
+    { key:'targetCpl', label:'Target', align:'right', sortable:false },
+    { key:'margin', label:'Margin', align:'right', sortable:true },
+    { key:'revenue', label:'Revenue', align:'right', sortable:true },
+    { key:'profit', label:'Profit', align:'right', sortable:true },
+  ];
+  if (hasVideoData) {
+    base.push(
+      { key:'hook', label:'Hook %', align:'right', sortable:true },
+      { key:'hold', label:'Hold %', align:'right', sortable:true },
+      { key:'cpqc', label:'CPQC', align:'right', sortable:true },
+    );
+  }
+  base.push({ key:'notes', label:'Notes', align:'left', sortable:false });
+  return base;
+}
+
+// ==================== UTILITIES ====================
+function $(id) { return document.getElementById(id); }
+function fmt(n, d=0) { return n != null && !isNaN(n) ? '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}) : '—'; }
+function fmtN(n, d=0) { return n != null && !isNaN(n) ? Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}) : '—'; }
+function fmtPct(n) { return n != null && !isNaN(n) ? n.toFixed(1)+'%' : '—'; }
+function parseNum(v) { if(v==null||v==='') return null; let n=parseFloat(String(v).replace(/[$,]/g,'')); return isNaN(n)?null:n; }
+function getAcctColor(name) {
+  if(!name) return 'blue';
+  if(!acctColorMap[name]) { acctColorMap[name]=ACCT_COLORS[acctColorIdx%ACCT_COLORS.length]; acctColorIdx++; }
+  return acctColorMap[name];
+}
+
+function classifyTort(name) {
+  if(!name) return 'Other';
+  const n = name.toUpperCase();
+  if(n.includes('HERNIA') || n.includes(' HM ') || n.startsWith('HM ') || n.includes('HM_')) return 'Hernia Mesh';
+  if(n.includes('ILM') || n.includes('JDC')) {
+    if(n.includes('NZT') || n.includes('NZ')) return 'ILM NZT';
+    if(n.includes('EST')) return 'ILM EST';
+    return 'ILM';
+  }
+  if(n.includes('DEPO')) {
+    if(n.includes('PULASKI')) return 'Depo Pulaski';
+    if(n.includes('LCA')) return 'Depo LCA';
+    return 'Depo Pulaski';
+  }
+  if(n.includes('TALCUM') || n.includes('TALC')) return 'Talcum';
+  if(n.includes('SUCO') || n.includes('SNAPCHAT')) return 'Suco';
+  if(n.includes('SMA')) return 'SMA';
+  if(n.includes('POWERPORT') || n.includes('POWER PORT')) return 'PowerPort';
+  if(n.includes('ROBLOX')) return 'Roblox';
+  if(n.includes('COVERAGEHUB') || n.includes('COVERAGE')) return 'CoverageHub';
+  return 'Other';
+}
+
+function calcMetrics(c) {
+  c.tort = classifyTort(c.campaign_name);
+  const t = TARGET_CPLS[c.tort] || TARGET_CPLS['Other'];
+  c.be = t.be;
+  c.targetCpl = t.target;
+  const spend = parseNum(c.spend)||0;
+  const leads = parseNum(c.leads)||0;
+  const rev = parseNum(c.revenue)||0;
+  const impr = parseNum(c.impressions)||0;
+  const v3 = parseNum(c.video_3sec_views)||0;
+  const v50 = parseNum(c.video_50pct_views)||0;
+  const lpv = parseNum(c.landing_page_views)||0;
+  c._spend = spend; c._leads = leads; c._revenue = rev;
+  c._cpl = leads > 0 ? spend / leads : null;
+  c._margin = rev > 0 ? ((rev - spend) / rev * 100) : null;
+  c._profit = rev - spend;
+  c._hook = impr > 0 ? (v3 / impr * 100) : null;
+  c._hold = v3 > 0 ? (v50 / v3 * 100) : null;
+  c._cpqc = lpv > 0 ? spend / lpv : null;
+  c._budget = parseNum(c.budget);
+  c._cap = parseNum(c.cap);
+}
+
+function checkVideoData() {
+  hasVideoData = campaigns.some(c => c._hook != null || c._hold != null || c._cpqc != null);
+}
+
+// ==================== DARK MODE ====================
+function toggleDark() {
+  document.documentElement.classList.toggle('dark');
+  localStorage.setItem('dark', document.documentElement.classList.contains('dark'));
+}
+if(localStorage.getItem('dark')==='true') document.documentElement.classList.add('dark');
+
+// ==================== IMPORT / EXPORT ====================
+function openImportModal() { $('importModal').classList.add('active'); }
+function closeImportModal() { $('importModal').classList.remove('active'); }
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if(lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h=>h.trim().toLowerCase().replace(/[^a-z0-9_]/g,''));
+  const rows = [];
+  for(let i=1;i<lines.length;i++) {
+    const vals = parseCSVLine(lines[i]);
+    if(vals.length < 2) continue;
+    const obj = {};
+    headers.forEach((h,j) => obj[h] = vals[j]||'');
+    rows.push(obj);
+  }
+  return rows;
+}
+
+function parseCSVLine(line) {
+  const result = []; let current = ''; let inQuotes = false;
+  for(let i=0;i<line.length;i++) {
+    const c = line[i];
+    if(inQuotes) {
+      if(c==='"' && line[i+1]==='"') { current+='"'; i++; }
+      else if(c==='"') inQuotes=false;
+      else current+=c;
+    } else {
+      if(c==='"') inQuotes=true;
+      else if(c===',') { result.push(current.trim()); current=''; }
+      else current+=c;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+function importData() {
+  const raw = $('importData').value.trim();
+  if(!raw) return;
+  const isNZD = $('isNZD').checked;
+  const rate = parseFloat($('nzdRate').value) || 0.586;
+  let data;
+  try {
+    data = JSON.parse(raw);
+    if(!Array.isArray(data)) {
+      if(data.campaigns) data = data.campaigns;
+      else if(data.data) data = data.data;
+      else data = [data];
+    }
+  } catch(e) {
+    data = parseCSV(raw);
+  }
+  if(!data || !data.length) { alert('No valid data found'); return; }
+  data.forEach(row => {
+    // Normalize field names
+    if(row.name && !row.campaign_name) row.campaign_name = row.name;
+    if(row.campaign && !row.campaign_name) row.campaign_name = row.campaign;
+    if(row.account_name && !row.account) row.account = row.account_name;
+    // NZD conversion
+    if(isNZD) {
+      ['spend','budget','revenue','cpl'].forEach(f => {
+        if(row[f] != null) {
+          const v = parseNum(row[f]);
+          if(v != null) {
+            row['nzd_'+f] = v;
+            row[f] = v * rate;
+          }
+        }
+      });
+      row.isNZD = true;
+    }
+    calcMetrics(row);
+  });
+  campaigns = campaigns.concat(data);
+  closeImportModal();
+  reRender();
+}
+
+function exportCSV() {
+  const headers = ['campaign_name','account','status','tort','budget','spend','leads','cap','cpl','be','target_cpl','margin','revenue','profit','hook_pct','hold_pct','cpqc','notes'];
+  let csv = headers.join(',')+'\n';
+  campaigns.forEach(c => {
+    csv += [c.campaign_name, c.account, c.status, c.tort, c._budget, c._spend, c._leads, c._cap, c._cpl?.toFixed(2), c.be, c.targetCpl, c._margin?.toFixed(1), c._revenue, c._profit?.toFixed(2), c._hook?.toFixed(1), c._hold?.toFixed(1), c._cpqc?.toFixed(2), c.notes||''].map(v=>'"'+(v??'')+'"').join(',')+'\n';
+  });
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='meta_ads_export_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+// ==================== SAMPLE DATA ====================
+function loadSampleData() {
+  const statuses = ['ACTIVE','ACTIVE','ACTIVE','PAUSED','ACTIVE','ACTIVE','RESTRICTED','ACTIVE','ACTIVE','PAUSED','ACTIVE','ACTIVE','ACTIVE','ACTIVE','ACTIVE','ACTIVE'];
+  const accts = ['Alpha Media','Beta Ads','Gamma Digital','Delta Marketing','Epsilon Group','Zeta Agency','Eta Corp','Theta Media'];
+  const sampleCampaigns = [
+    {campaign_name:'Hernia Mesh - Broad - V1', account:accts[0], status:'ACTIVE', budget:500, spend:1245.67, leads:18, cap:25, impressions:45000, link_clicks:1200, landing_page_views:890, video_3sec_views:15000, video_50pct_views:8500, revenue:2800, notes:'Top performer'},
+    {campaign_name:'Hernia Mesh - LAL - V2', account:accts[1], status:'ACTIVE', budget:300, spend:876.43, leads:12, cap:20, impressions:32000, link_clicks:900, landing_page_views:650, video_3sec_views:11000, video_50pct_views:5800, revenue:1900, notes:''},
+    {campaign_name:'HM Retarget - DPA', account:accts[0], status:'PAUSED', budget:200, spend:234.12, leads:3, cap:10, impressions:12000, link_clicks:340, landing_page_views:200, video_3sec_views:4000, video_50pct_views:1800, revenue:450, notes:'Low volume'},
+    {campaign_name:'Depo Pulaski - Interest - V1', account:accts[2], status:'ACTIVE', budget:400, spend:1567.89, leads:10, cap:15, impressions:52000, link_clicks:1450, landing_page_views:1050, video_3sec_views:17500, video_50pct_views:9200, revenue:3200, notes:'Scaling'},
+    {campaign_name:'Depo Pulaski - LAL 1%', account:accts[3], status:'ACTIVE', budget:350, spend:989.23, leads:7, cap:12, impressions:38000, link_clicks:1050, landing_page_views:780, video_3sec_views:13000, video_50pct_views:6500, revenue:2100, notes:''},
+    {campaign_name:'Depo LCA - Broad - V3', account:accts[0], status:'ACTIVE', budget:450, spend:2134.56, leads:14, cap:20, impressions:61000, link_clicks:1680, landing_page_views:1250, video_3sec_views:20500, video_50pct_views:11000, revenue:4500, notes:'Best LCA'},
+    {campaign_name:'ILM EST - Interest - V1', account:accts[4], status:'ACTIVE', budget:600, spend:3456.78, leads:9, cap:12, impressions:78000, link_clicks:2100, landing_page_views:1500, video_3sec_views:26000, video_50pct_views:14000, revenue:5800, notes:'High CPL'},
+    {campaign_name:'ILM NZT - Broad - V1', account:accts[5], status:'RESTRICTED', budget:500, spend:2345.67, leads:6, cap:10, impressions:55000, link_clicks:1500, landing_page_views:1100, video_3sec_views:18500, video_50pct_views:9800, revenue:3800, notes:'Account issue'},
+    {campaign_name:'Talcum - Broad - V2', account:accts[6], status:'ACTIVE', budget:350, spend:1678.90, leads:7, cap:10, impressions:48000, link_clicks:1320, landing_page_views:980, video_3sec_views:16000, video_50pct_views:8400, revenue:2800, notes:''},
+    {campaign_name:'Talcum - LAL 2% - V1', account:accts[1], status:'ACTIVE', budget:250, spend:867.45, leads:4, cap:8, impressions:29000, link_clicks:810, landing_page_views:590, video_3sec_views:9800, video_50pct_views:5100, revenue:1400, notes:'Testing'},
+    {campaign_name:'SMA - Interest - V1', account:accts[2], status:'ACTIVE', budget:200, spend:543.21, leads:11, cap:20, impressions:35000, link_clicks:980, landing_page_views:720, video_3sec_views:11800, video_50pct_views:6200, revenue:1200, notes:'Good CPL'},
+    {campaign_name:'SMA - Retarget', account:accts[0], status:'PAUSED', budget:100, spend:123.45, leads:3, cap:5, impressions:8000, link_clicks:220, landing_page_views:160, video_3sec_views:2800, video_50pct_views:1400, revenue:300, notes:''},
+    {campaign_name:'PowerPort - Broad', account:accts[3], status:'ACTIVE', budget:400, spend:1890.34, leads:12, cap:18, impressions:56000, link_clicks:1540, landing_page_views:1140, video_3sec_views:18800, video_50pct_views:10000, revenue:3600, notes:'Steady'},
+    {campaign_name:'Suco - Snapchat - V1', account:accts[7], status:'ACTIVE', budget:150, spend:234.56, leads:12, cap:30, impressions:42000, link_clicks:1150, landing_page_views:840, video_3sec_views:14000, video_50pct_views:7300, revenue:800, notes:'Low CPA'},
+    {campaign_name:'Roblox - Interest - V1', account:accts[4], status:'ACTIVE', budget:300, spend:1123.78, leads:9, cap:15, impressions:41000, link_clicks:1120, landing_page_views:820, video_3sec_views:13700, video_50pct_views:7100, revenue:2100, notes:''},
+    {campaign_name:'Roblox - LAL', account:accts[5], status:'ACTIVE', budget:250, spend:678.90, leads:5, cap:10, impressions:24000, link_clicks:670, landing_page_views:490, video_3sec_views:8000, video_50pct_views:4200, revenue:1050, notes:'New'},
+  ];
+  sampleCampaigns.forEach(c => calcMetrics(c));
+  campaigns = sampleCampaigns;
+  closeImportModal();
+  expandedTorts = new Set();
+  reRender();
+}
+
+// ==================== RENDERING ====================
+function getFilteredCampaigns() {
+  const search = ($('searchInput').value||'').toLowerCase();
+  const status = $('statusFilter').value;
+  return campaigns.filter(c => {
+    if(search && !c.campaign_name?.toLowerCase().includes(search) && !c.account?.toLowerCase().includes(search) && !c.tort?.toLowerCase().includes(search)) return false;
+    if(status!=='all') {
+      const s = (c.status||'').toLowerCase();
+      if(status==='active' && s!=='active') return false;
+      if(status==='paused' && s!=='paused') return false;
+      if(status==='restricted' && !s.includes('restrict')) return false;
+    }
+    return true;
+  });
+}
+
+function groupByTort(data) {
+  const groups = {};
+  data.forEach(c => {
+    const t = c.tort || 'Other';
+    if(!groups[t]) groups[t] = [];
+    groups[t].push(c);
+  });
+  return groups;
+}
+
+function sortData(data) {
+  if(!sortCol) return data;
+  const col = sortCol;
+  return [...data].sort((a,b) => {
+    let va, vb;
+    switch(col) {
+      case 'name': va=a.campaign_name||''; vb=b.campaign_name||''; break;
+      case 'account': va=a.account||''; vb=b.account||''; break;
+      case 'status': va=a.status||''; vb=b.status||''; break;
+      case 'budget': va=a._budget||0; vb=b._budget||0; break;
+      case 'spend': va=a._spend||0; vb=b._spend||0; break;
+      case 'leads': va=a._leads||0; vb=b._leads||0; break;
+      case 'cap': va=a._cap||0; vb=b._cap||0; break;
+      case 'cpl': va=a._cpl||9999; vb=b._cpl||9999; break;
+      case 'margin': va=a._margin||0; vb=b._margin||0; break;
+      case 'revenue': va=a._revenue||0; vb=b._revenue||0; break;
+      case 'profit': va=a._profit||0; vb=b._profit||0; break;
+      case 'hook': va=a._hook||0; vb=b._hook||0; break;
+      case 'hold': va=a._hold||0; vb=b._hold||0; break;
+      case 'cpqc': va=a._cpqc||9999; vb=b._cpqc||9999; break;
+      default: return 0;
+    }
+    if(typeof va==='string') { let r=va.localeCompare(vb); return sortDir==='asc'?r:-r; }
+    return sortDir==='asc'?(va-vb):(vb-va);
+  });
+}
+
+function statusDotHTML(status) {
+  const s = (status||'').toLowerCase();
+  if(s==='active') return '<span class="status-dot dot-green"></span>';
+  if(s.includes('restrict')) return '<span class="status-dot dot-red"></span>';
+  return '<span class="status-dot dot-gray"></span>';
+}
+
+function cplBadge(cpl, be, target) {
+  if(cpl == null) return '—';
+  let cls = 'badge-red';
+  if(cpl <= target) cls = 'badge-emerald';
+  else if(cpl <= be) cls = 'badge-amber';
+  return `<span class="badge ${cls}">${fmt(cpl,2)}</span>`;
+}
+
+function marginBadge(val) {
+  if(val == null || isNaN(val)) return '<span class="margin-badge margin-gray">—</span>';
+  let cls = 'margin-red';
+  if(val > 50) cls = 'margin-green';
+  else if(val >= 20) cls = 'margin-amber';
+  return `<span class="margin-badge ${cls}">${fmtPct(val)}</span>`;
+}
+
+function pctBadge(val, goodThresh, midThresh) {
+  if(val == null) return '—';
+  let color = 'var(--red-loss)';
+  if(val >= goodThresh) color = 'var(--green-profit)';
+  else if(val >= midThresh) color = 'var(--amber-text)';
+  return `<span style="color:${color}">${fmtPct(val)}</span>`;
+}
+
+function reRender() {
+  checkVideoData();
+  const COLUMNS = getVisibleColumns();
+  const filtered = getFilteredCampaigns();
+  const groups = groupByTort(filtered);
+  const sortedGroups = Object.keys(groups).sort();
+
+  // Update timestamp
+  $('timestamp').textContent = 'Last updated: ' + new Date().toLocaleString();
+
+  // Accounts bar
+  renderAccountsBar(filtered);
+
+  // Revenue card
+  renderRevenueCard(filtered, groups);
+
+  // Filter stats
+  const activeCount = filtered.filter(c=>(c.status||'').toLowerCase()==='active').length;
+  $('filterStats').innerHTML = `<strong>${sortedGroups.length}</strong> groups · <strong>${filtered.length}</strong> campaigns · <strong>${activeCount}</strong> active`;
+
+  // Table header
+  $('tableHead').innerHTML = COLUMNS.map(col =>
+    `<th class="${col.sortable?'':'nosort'} ${sortCol===col.key?'sorted':''}" style="text-align:${col.align}" onclick="${col.sortable?`sortBy('${col.key}')`:''}">
+      ${col.label}${col.sortable?`<span class="sort-arrow">${sortCol===col.key?(sortDir==='asc'?'▲':'▼'):'↕'}</span>`:''}
+    </th>`
+  ).join('');
+
+  // Empty state
+  if(campaigns.length === 0) {
+    const colCount = COLUMNS.length;
+    $('tableBody').innerHTML = `<tr><td colspan="${colCount}" class="empty-state">
+      <div class="empty-icon">📊</div>
+      <div>No campaigns loaded.</div>
+      <div style="margin-top:4px;color:var(--text-secondary)">Click Import or Load Sample Data to get started.</div>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="openImportModal()">Import Data</button>
+      <button class="btn" style="margin-top:16px;margin-left:8px" onclick="loadSampleData()">Load Sample Data</button>
+    </td></tr>`;
+    $('tableFoot').innerHTML = '';
+    return;
+  }
+
+  // Table body
+  let html = '';
+  let totalSpend=0, totalLeads=0, totalRevenue=0, totalProfit=0;
+
+  sortedGroups.forEach(tort => {
+    const rows = sortData(groups[tort]);
+    const expanded = expandedTorts.has(tort);
+    const tSpend = rows.reduce((s,c)=>s+c._spend,0);
+    const tLeads = rows.reduce((s,c)=>s+c._leads,0);
+    const tRev = rows.reduce((s,c)=>s+c._revenue,0);
+    const tProfit = tRev - tSpend;
+    const tCpl = tLeads > 0 ? tSpend / tLeads : null;
+    const tMargin = tRev > 0 ? ((tRev-tSpend)/tRev*100) : null;
+    const t = TARGET_CPLS[tort] || TARGET_CPLS['Other'];
+    const activeN = rows.filter(c=>(c.status||'').toLowerCase()==='active').length;
+    const statusSummary = `${activeN}/${rows.length} active`;
+
+    totalSpend+=tSpend; totalLeads+=tLeads; totalRevenue+=tRev; totalProfit+=tProfit;
+
+    html += `<tr class="tort-row" onclick="toggleTort('${tort}')">
+      <td><span class="chevron ${expanded?'expanded':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></span><span class="tort-name">${tort}</span> <span class="count-badge">${rows.length}</span></td>
+      <td><span style="font-size:11px;color:var(--text-secondary)">${statusSummary}</span></td>
+      <td style="text-align:center">${statusDotHTML(activeN>0?'active':'paused')}</td>
+      <td style="text-align:right">${fmt(rows.reduce((s,c)=>s+(c._budget||0),0),0)}</td>
+      <td style="text-align:right">${fmt(tSpend,2)}</td>
+      <td style="text-align:right">${fmtN(tLeads)}</td>
+      <td style="text-align:right">${fmtN(rows.reduce((s,c)=>s+(c._cap||0),0))}</td>
+      <td style="text-align:right">${cplBadge(tCpl, t.be, t.target)}</td>
+      <td style="text-align:right">${fmt(t.be,0)}</td>
+      <td style="text-align:right">${fmt(t.target,2)}</td>
+      <td style="text-align:right">${marginBadge(tMargin)}</td>
+      <td style="text-align:right">${fmt(tRev,2)}</td>
+      <td style="text-align:right"><span class="${tProfit>=0?'positive':'negative'}">${fmt(tProfit,2)}</span></td>`;
+    if(hasVideoData) {
+      html += `<td style="text-align:right">—</td>
+      <td style="text-align:right">—</td>
+      <td style="text-align:right">—</td>`;
+    }
+    html += `<td></td>
+    </tr>`;
+
+    rows.forEach(c => {
+      html += `<tr class="campaign-row ${expanded?'':'hidden'}" data-tort="${tort}">
+        <td>${c.campaign_name||'—'}</td>
+        <td><span class="acct-pill acct-${getAcctColor(c.account)}">${c.account||'—'}</span></td>
+        <td style="text-align:center">${statusDotHTML(c.status)}</td>
+        <td style="text-align:right">${fmt(c._budget,0)}</td>
+        <td style="text-align:right">${fmt(c._spend,2)}</td>
+        <td style="text-align:right">${fmtN(c._leads)}</td>
+        <td style="text-align:right">${fmtN(c._cap)}</td>
+        <td style="text-align:right">${cplBadge(c._cpl, c.be, c.targetCpl)}</td>
+        <td style="text-align:right">${fmt(c.be,0)}</td>
+        <td style="text-align:right">${fmt(c.targetCpl,2)}</td>
+        <td style="text-align:right">${marginBadge(c._margin)}</td>
+        <td style="text-align:right">${fmt(c._revenue,2)}</td>
+        <td style="text-align:right"><span class="${c._profit>=0?'positive':'negative'}">${fmt(c._profit,2)}</span></td>`;
+      if(hasVideoData) {
+        html += `<td style="text-align:right">${pctBadge(c._hook, 30, 20)}</td>
+        <td style="text-align:right">${pctBadge(c._hold, 50, 30)}</td>
+        <td style="text-align:right">${c._cpqc!=null?fmt(c._cpqc,2):'—'}</td>`;
+      }
+      html += `<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis" title="${c.notes||''}">${c.notes||''}</td>
+      </tr>`;
+    });
+  });
+
+  $('tableBody').innerHTML = html;
+
+  // Footer totals
+  const totalCpl = totalLeads > 0 ? totalSpend/totalLeads : null;
+  const totalMargin = totalRevenue > 0 ? ((totalRevenue-totalSpend)/totalRevenue*100) : null;
+  let footHtml = `<tr class="summary-row">
+    <td><strong>TOTAL</strong></td>
+    <td></td><td></td>
+    <td style="text-align:right">—</td>
+    <td style="text-align:right"><strong>${fmt(totalSpend,2)}</strong></td>
+    <td style="text-align:right"><strong>${fmtN(totalLeads)}</strong></td>
+    <td style="text-align:right">—</td>
+    <td style="text-align:right">${totalCpl!=null?fmt(totalCpl,2):'—'}</td>
+    <td style="text-align:right">—</td><td style="text-align:right">—</td>
+    <td style="text-align:right">${marginBadge(totalMargin)}</td>
+    <td style="text-align:right"><strong>${fmt(totalRevenue,2)}</strong></td>
+    <td style="text-align:right"><strong class="${totalProfit>=0?'positive':'negative'}">${fmt(totalProfit,2)}</strong></td>`;
+  if(hasVideoData) {
+    footHtml += `<td style="text-align:right">—</td><td style="text-align:right">—</td><td style="text-align:right">—</td>`;
+  }
+  footHtml += `<td></td></tr>`;
+  $('tableFoot').innerHTML = footHtml;
+}
+
+function renderAccountsBar(filtered) {
+  const accts = {};
+  filtered.forEach(c => {
+    const a = c.account || 'Unknown';
+    if(!accts[a]) accts[a] = {active:0, paused:0, restricted:0, total:0};
+    accts[a].total++;
+    const s = (c.status||'').toLowerCase();
+    if(s==='active') accts[a].active++;
+    else if(s.includes('restrict')) accts[a].restricted++;
+    else accts[a].paused++;
+  });
+  $('accountsBar').innerHTML = Object.keys(accts).sort().map(a => {
+    const d = accts[a];
+    let dot = 'dot-green';
+    if(d.restricted > 0) dot = 'dot-red';
+    else if(d.active === 0) dot = 'dot-gray';
+    return `<span class="account-pill"><span class="dot ${dot}"></span>${a} <span style="opacity:.5">(${d.total})</span></span>`;
+  }).join('');
+}
+
+function renderRevenueCard(filtered, groups) {
+  const totalRev = filtered.reduce((s,c)=>s+c._revenue,0);
+  const totalSpend = filtered.reduce((s,c)=>s+c._spend,0);
+  const goal = parseFloat($('revGoalInput').value) || 100000;
+  const pct = goal > 0 ? Math.min((totalRev/goal)*100, 100) : 0;
+  const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
+  const dayOfMonth = new Date().getDate();
+  const projected = dayOfMonth > 0 ? (totalRev / dayOfMonth) * daysInMonth : 0;
+
+  $('revTotal').textContent = fmt(totalRev, 0);
+  $('revGoal').innerHTML = `Goal: ${fmt(goal,0)} · <span id="revPct">${pct.toFixed(1)}</span>% achieved`;
+  $('revBar').style.width = pct + '%';
+  $('revProjected').textContent = fmt(projected, 0);
+  $('revSpend').textContent = fmt(totalSpend, 0);
+
+  $('revStats').innerHTML = `
+    <div class="revenue-stat"><div class="revenue-stat-label">Total Profit</div><div class="revenue-stat-value ${totalRev-totalSpend>=0?'positive':'negative'}">${fmt(totalRev-totalSpend,0)}</div></div>
+    <div class="revenue-stat"><div class="revenue-stat-label">Avg CPL</div><div class="revenue-stat-value">${filtered.reduce((s,c)=>s+c._leads,0)>0?fmt(totalSpend/filtered.reduce((s,c)=>s+c._leads,0),2):'—'}</div></div>
+    <div class="revenue-stat"><div class="revenue-stat-label">Total Leads</div><div class="revenue-stat-value">${fmtN(filtered.reduce((s,c)=>s+c._leads,0))}</div></div>
+    <div class="revenue-stat"><div class="revenue-stat-label">Campaigns</div><div class="revenue-stat-value">${filtered.length}</div></div>
+  `;
+
+  $('tortBreakdown').innerHTML = Object.keys(groups).sort().map(tort => {
+    const rev = groups[tort].reduce((s,c)=>s+c._revenue,0);
+    const spend = groups[tort].reduce((s,c)=>s+c._spend,0);
+    const profitable = rev >= spend;
+    return `<span class="tort-chip ${profitable?'tort-chip-positive':'tort-chip-negative'}">${tort}: ${fmt(rev,0)}</span>`;
+  }).join('');
+}
+
+function toggleTort(tort) {
+  if(expandedTorts.has(tort)) expandedTorts.delete(tort);
+  else expandedTorts.add(tort);
+  reRender();
+}
+
+function sortBy(col) {
+  if(sortCol === col) sortDir = sortDir==='asc'?'desc':'asc';
+  else { sortCol = col; sortDir = 'asc'; }
+  reRender();
+}
+
+// Init
+reRender();
+</script>
+</body>
+</html>
